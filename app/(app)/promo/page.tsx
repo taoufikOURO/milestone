@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { Alert } from "@/components/auth/ui";
 import { LeavePromoForm } from "@/components/promo/forms";
@@ -104,7 +105,13 @@ async function PromoContent({ searchParams }: Pick<PageProps<"/promo">, "searchP
               {promo.groups.map((g) => (
                 <li key={g.id} className="flex items-center justify-between gap-2 py-2">
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-text-primary">{g.name}</p>
+                    {g.isMember ? (
+                      <Link href={`/groupes/${g.id}`} className="block truncate font-medium text-text-primary hover:text-accent">
+                        {g.name}
+                      </Link>
+                    ) : (
+                      <p className="truncate font-medium text-text-primary">{g.name}</p>
+                    )}
                     <p className="text-xs text-text-secondary">
                       {dateFormat.format(g.startDate)} → {dateFormat.format(g.endDate)} · {g.memberCount} membre
                       {g.memberCount > 1 ? "s" : ""}

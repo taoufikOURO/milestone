@@ -30,7 +30,7 @@ function ErrorAlert({ state }: { state: PromoFormState }) {
   );
 }
 
-function Select({
+export function Select({
   label,
   name,
   options,
@@ -70,7 +70,7 @@ function Select({
  * Formulaire soumis seulement après confirmation (§6.5). La confirmation
  * n'est qu'un confort : le service revérifie les droits.
  */
-function ConfirmedForm({
+export function ConfirmedForm({
   action,
   pending,
   triggerLabel,

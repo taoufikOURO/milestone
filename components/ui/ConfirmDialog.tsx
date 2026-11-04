@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 
 /**
@@ -28,6 +28,8 @@ export function ConfirmDialog({
   onCancel: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Plusieurs dialogues peuvent coexister sur une page : id unique par instance.
+  const titleId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
@@ -39,14 +41,14 @@ export function ConfirmDialog({
   return (
     <dialog
       ref={ref}
-      aria-labelledby="confirm-title"
+      aria-labelledby={titleId}
       onCancel={(e) => {
         e.preventDefault();
         if (!pending) onCancel();
       }}
       className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-border-soft bg-background p-6 text-text-primary shadow-lg backdrop:bg-text-primary/50"
     >
-      <h2 id="confirm-title" className="text-lg font-bold">
+      <h2 id={titleId} className="text-lg font-bold">
         {title}
       </h2>
       <div className="mt-2 text-sm text-text-secondary">{description}</div>

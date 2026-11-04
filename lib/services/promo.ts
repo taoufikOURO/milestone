@@ -1,6 +1,8 @@
 import { db } from "@/lib/db";
 import { Prisma, type PromoRole } from "@/generated/prisma/client";
+import { planGroupDeparture } from "@/lib/group-departure";
 import { generatePromoCode, isPromoCodeFormat } from "@/lib/promo-code";
+import { releaseAssignments } from "@/lib/services/departure";
 import type { LeavePromoInput } from "@/lib/validation/promo";
 
 // Promotions (§4.2). Chaque fonction reçoit l'utilisateur courant (issu de la
@@ -10,7 +12,7 @@ import type { LeavePromoInput } from "@/lib/validation/promo";
 /** Utilisateur courant, tel que renvoyé par requireVerifiedUser(). */
 export type Actor = { id: string; emailVerifiedAt: Date | null };
 
-type Tx = Prisma.TransactionClient;
+export type Tx = Prisma.TransactionClient;
 
 export type PromoError =
   | "unverified"
@@ -51,7 +53,7 @@ const fail = (error: PromoError): PromoFailure => ({ ok: false, error });
 
 const isVerified = (actor: Actor) => actor.emailVerifiedAt !== null;
 
-function isPrismaError(error: unknown, code: string): boolean {
+export function isPrismaError(error: unknown, code: string): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === code;
 }
 
@@ -59,8 +61,10 @@ function isPrismaError(error: unknown, code: string): boolean {
  * Verrouille la ligne de la promo jusqu'à la fin de la transaction : les
  * opérations sur une même promo (rejoindre, quitter, passation, suppression)
  * s'exécutent l'une après l'autre. `false` si la promo n'existe plus.
+ * Les opérations de groupe le prennent aussi, avant le verrou du groupe :
+ * même ordre que leavePromo et deletePromo, donc pas d'interblocage.
  */
-async function lockPromo(tx: Tx, promoId: string): Promise<boolean> {
+export async function lockPromo(tx: Tx, promoId: string): Promise<boolean> {
   const rows = await tx.$queryRaw<{ id: string }[]>`
     SELECT id FROM promos WHERE id = ${promoId}::uuid FOR UPDATE`;
   return rows.length > 0;
@@ -292,39 +296,30 @@ export async function leavePromo(
       },
     });
 
+    // Mêmes règles que le départ d'un groupe (lib/group-departure.ts).
     const missing: { id: string; name: string }[] = [];
     const leaderSuccessors: { groupId: string; userId: string }[] = [];
     const soloGroupIds: string[] = [];
     const keptGroupIds: string[] = [];
     for (const m of memberships) {
-      const others = m.group.members.map((u) => u.userId);
-      if (others.length === 0) {
-        soloGroupIds.push(m.groupId);
-        continue;
+      const plan = planGroupDeparture({
+        leaverId: actor.id,
+        leaverRole: m.role,
+        memberIds: [actor.id, ...m.group.members.map((u) => u.userId)],
+        successorId: input.groupSuccessors[m.groupId],
+      });
+      if (!plan.ok) missing.push({ id: m.groupId, name: m.group.name });
+      else if (plan.kind === "delete_group") soloGroupIds.push(m.groupId);
+      else {
+        keptGroupIds.push(m.groupId);
+        if (plan.newLeaderId) leaderSuccessors.push({ groupId: m.groupId, userId: plan.newLeaderId });
       }
-      keptGroupIds.push(m.groupId);
-      if (m.role !== "leader") continue;
-      const successor = input.groupSuccessors[m.groupId];
-      if (successor && others.includes(successor)) leaderSuccessors.push({ groupId: m.groupId, userId: successor });
-      else missing.push({ id: m.groupId, name: m.group.name });
     }
     if (missing.length > 0) return { ok: false, error: "leader_successor_required", groups: missing };
 
-    // §4.4 : on retire ses assignations. Une tâche partagée reste aux autres ;
-    // une tâche dont il était seul assigné n'a plus d'assigné (non assignée).
-    const ownTasks = await tx.taskAssignment.findMany({
-      where: { userId: actor.id, task: { groupId: { in: keptGroupIds } } },
-      select: { taskId: true },
-    });
-    const taskIds = ownTasks.map((t) => t.taskId);
-    await tx.taskAssignment.deleteMany({ where: { userId: actor.id, taskId: { in: taskIds } } });
-    // §4.5 : pas de réunion pour une tâche qui n'a plus plusieurs assignés.
-    const remaining = await tx.task.findMany({
-      where: { id: { in: taskIds } },
-      select: { id: true, _count: { select: { assignments: true } } },
-    });
-    const noMeeting = remaining.filter((t) => t._count.assignments < 2).map((t) => t.id);
-    await tx.meeting.deleteMany({ where: { taskId: { in: noMeeting } } });
+    // §4.4 : une tâche partagée reste aux autres ; une tâche dont il était seul
+    // assigné devient non assignée ; plus de réunion sans plusieurs assignés.
+    await releaseAssignments(tx, actor.id, keptGroupIds);
 
     // Départ des groupes, puis passation (un seul chef par groupe).
     await tx.groupMember.deleteMany({ where: { userId: actor.id, groupId: { in: keptGroupIds } } });
