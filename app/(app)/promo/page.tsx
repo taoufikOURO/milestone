@@ -3,12 +3,14 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Alert } from "@/components/auth/ui";
 import { LeavePromoForm } from "@/components/promo/forms";
+import { PromoTimeline } from "@/components/calendar/PromoTimeline";
 import { PromoSkeleton } from "@/components/promo/PromoSkeleton";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/ButtonLink";
 import { Card } from "@/components/ui/Card";
 import { requireVerifiedUser } from "@/lib/auth/guards";
 import { formatPromoCode } from "@/lib/promo-code";
+import { getPromoCalendar } from "@/lib/services/calendar";
 import { findMyPromoId, getPromoOverview } from "@/lib/services/promo";
 
 export const metadata: Metadata = { title: "Promo · Milestone" };
@@ -77,6 +79,13 @@ async function PromoContent({ searchParams }: Pick<PageProps<"/promo">, "searchP
         </Card>
       ) : null}
 
+      <Card className="min-w-0">
+        <h2 className="text-lg font-bold text-text-primary">Calendrier de la promo</h2>
+        <Suspense fallback={<div className="mt-3 h-24 animate-pulse rounded-lg bg-border-soft/60" aria-busy="true" />}>
+          <TimelineContent userId={user.id} emailVerifiedAt={user.emailVerifiedAt} promoId={promo.id} />
+        </Suspense>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <h2 className="text-lg font-bold text-text-primary">
@@ -136,4 +145,17 @@ async function PromoContent({ searchParams }: Pick<PageProps<"/promo">, "searchP
       </Card>
     </div>
   );
+}
+
+async function TimelineContent({
+  userId,
+  emailVerifiedAt,
+  promoId,
+}: {
+  userId: string;
+  emailVerifiedAt: Date | null;
+  promoId: string;
+}) {
+  const groups = await getPromoCalendar({ id: userId, emailVerifiedAt }, promoId);
+  return <PromoTimeline groups={groups ?? []} />;
 }
