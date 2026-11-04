@@ -9,8 +9,12 @@ Application de planification des projets de groupe pour une promotion.
 ## Stack
 
 - Next.js (App Router), TypeScript, Tailwind CSS
-- Supabase : PostgreSQL, Auth, RLS activé sur toutes les tables
-- Supabase CLI en local (`supabase start`)
+- Prisma (schéma et migrations) : `prisma migrate dev` en local, `prisma migrate deploy` en production
+- Auth.js (NextAuth), email et mot de passe, sessions JWT
+- Base : PostgreSQL local en dev, Supabase (PostgreSQL uniquement) en production. Supabase Auth n'est pas utilisé.
+- RLS activée sur toutes les tables, sans policy (refus par défaut via l'API Supabase). Prisma contourne la RLS : les droits sont appliqués dans les services serveur.
+- Validation : Zod côté serveur
+- Emails : Brevo (API transactionnelle), clé dans `BREVO_API_KEY`
 
 ## Palette
 
@@ -26,11 +30,12 @@ Application de planification des projets de groupe pour une promotion.
 - Propriétaire : `postgres`
 - Hôte : `localhost`, port 5432
 - Connexion : variable `DATABASE_URL` dans `.env` (ne jamais écrire les identifiants dans ce fichier)
+- Production : `DATABASE_URL` (poolée) et `DIRECT_URL` (migrations) dans les variables de l'hébergeur
 
 ## Règles de travail
 
 - Une fonctionnalité à la fois, validée avant la suivante.
 - Ne jamais désactiver la RLS.
-- Les actions sensibles sont vérifiées côté serveur.
+- Les actions sensibles sont vérifiées côté serveur, dans les services (`lib/services/*`), à chaque appel.
 - Demander avant de modifier le schéma de la base.
 - Lancer les tests et le lint avant de dire qu'une tâche est terminée.

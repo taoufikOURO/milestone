@@ -24,9 +24,10 @@ L'application ne planifie pas par groupe, mais **par étudiant, sur toute la pro
   - **Production** : Supabase (PostgreSQL). `DATABASE_URL` (connexion poolée) et `DIRECT_URL` (connexion directe, utilisée pour les migrations) dans les variables d'environnement de l'hébergeur.
   - Les migrations se lancent avec `prisma migrate dev` en local et `prisma migrate deploy` en production.
   - Le fichier `.env` n'est jamais versionné. Un fichier `.env.example`, sans secrets, l'est.
-- **Envoi d'emails** : service à choisir (voir section 10), pour l'email de validation et de réinitialisation du mot de passe.
+- **Envoi d'emails** : Brevo (API transactionnelle, clé `BREVO_API_KEY`), pour l'email de validation et de réinitialisation du mot de passe.
 - **Validation des données** : Zod, côté serveur, pour les formulaires et les actions.
-- **Hébergement** : à définir (proposition : Vercel pour le front, Supabase pour la base).
+- **Hébergement** : Vercel pour l'application, Supabase pour la base.
+- **RLS** : activée sur toutes les tables, sans policy (refus par défaut via l'API Supabase).
 
 ---
 
@@ -64,13 +65,15 @@ L'application ne planifie pas par groupe, mais **par étudiant, sur toute la pro
 - **Quitter la promo** : chaque étudiant peut quitter quand il le souhaite.
   - Un **membre** qui quitte la promo perd l'accès à ses groupes de cette promo. Ses tâches sont traitées selon la règle 4.4.
   - Le **délégué** ne peut quitter qu'après avoir nommé un successeur parmi les membres de la promo. Le successeur devient délégué.
+  - Un **chef de groupe** ne peut quitter la promo qu'après avoir nommé un successeur dans chacun de ses groupes.
 - **Passation** : le délégué choisit un membre, qui reçoit le rôle immédiatement.
+- **Suppression de la promo** : par le délégué, après confirmation. Tous les membres quittent la promo et tous ses groupes sont supprimés (tâches, assignations, dépendances, réunions comprises).
 
 ### 4.3 Groupes (projets)
 
 - **Création** : tout étudiant de la promo peut créer un groupe. Il en devient automatiquement le **chef**.
 - **Informations à saisir** : nom du groupe, date de début, date de fin.
-- **Invitations** : le chef invite des étudiants de la promo (par nom d'utilisateur). L'invité accepte ou refuse. Un étudiant ne rejoint un groupe qu'après acceptation.
+- **Invitations** : le chef invite des étudiants de la promo, par nom d'utilisateur uniquement. L'invité accepte ou refuse. Un étudiant ne rejoint un groupe qu'après acceptation.
 - **Un étudiant peut être dans plusieurs groupes** de la même promo. C'est le cœur de l'application.
 - **Suppression** : seul le chef du groupe peut supprimer le groupe. La suppression efface toutes les tâches, assignations et dépendances. L'application demande une confirmation explicite avant suppression.
 - **Un groupe sans membre** est supprimé automatiquement.
@@ -91,7 +94,7 @@ L'application ne planifie pas par groupe, mais **par étudiant, sur toute la pro
 - Chaque tâche a : **titre**, **durée en jours**, **assignés** (un ou plusieurs membres), **dépendances** (zéro, une ou plusieurs autres tâches du même groupe).
 - La durée est saisie par l'étudiant, en jours, cours inclus. L'application ne demande pas d'heures.
 - **Une tâche assignée à une seule personne** : aucune réunion n'est créée.
-- **Une tâche assignée à plusieurs personnes** : l'application propose un créneau de réunion qui tient compte de la disponibilité de chacun, c'est-à-dire des créneaux où les membres ne sont pas occupés ailleurs.
+- **Une tâche assignée à plusieurs personnes** : l'application propose un jour de réunion qui tient compte de la disponibilité de chacun. Le grain est d'un jour, sans emploi du temps importé : la réunion tombe le premier jour, dans la fenêtre de la tâche, où aucun assigné n'est occupé par une autre tâche planifiée.
 - **Dépendances** : une tâche ne peut être planifiée qu'une fois toutes ses dépendances terminées. Une dépendance circulaire est refusée.
 - **Statut** : à faire, en cours, terminée.
 
@@ -103,7 +106,11 @@ Règles de priorité lorsque deux projets se chevauchent :
 - **Deadlines proches** : la tâche dont la deadline est la plus proche passe en premier.
 - **Deadlines similaires** : la charge est répartie le plus équitablement possible entre les tâches et les étudiants.
 
-**Marge de sécurité** : une marge fixe de 20 % est ajoutée à chaque durée saisie. Elle est réglable par le chef du groupe. (À confirmer, voir section 10.)
+**Marge de sécurité** : une marge de 20 % par défaut est ajoutée à chaque durée saisie. Elle est réglable par le chef du groupe, entre 0 et 100 %. Durée effective = durée × (1 + marge), arrondie au jour supérieur.
+
+**Deadline d'une tâche** : la date de fin de son groupe. Deux deadlines sont « similaires » lorsqu'elles tombent à la même date ; le départage se fait alors sur la charge restante.
+
+**Charge par étudiant** : un étudiant fait au plus une tâche par jour (les tâches sont mises en file). Une tâche assignée à plusieurs personnes occupe tous ses assignés en parallèle.
 
 **Algorithme v1** :
 1. Calculer les dates au plus tôt de chaque tâche, en respectant les dépendances (méthode du chemin critique).
@@ -115,8 +122,9 @@ Un solveur (OR-Tools) n'est pas prévu en v1.
 
 ### 4.7 Avancement d'un groupe
 
-- Chaque tâche a un statut. L'avancement du groupe est calculé à partir des tâches terminées, **au prorata des jours**. Une tâche de 3 jours pèse trois fois plus qu'une tâche de 1 jour. (À confirmer, voir section 10.)
+- Chaque tâche a un statut. L'avancement du groupe est calculé à partir des tâches terminées, **au prorata des jours** de la durée saisie, sans la marge. Une tâche de 3 jours pèse trois fois plus qu'une tâche de 1 jour. Une tâche « en cours » compte pour 0 %.
 - Le chef et les membres peuvent changer le statut d'une tâche.
+- Seul le chef modifie le titre, la durée, les dépendances et les assignations d'une tâche.
 
 ---
 
@@ -136,7 +144,7 @@ Un solveur (OR-Tools) n'est pas prévu en v1.
 - Affiche les tâches planifiées, leur assigné, les réunions et les deadlines.
 - Chaque groupe a **son propre calendrier**.
 
-### 5.3 Vue personnelle (à valider)
+### 5.3 Vue personnelle
 
 - Chaque étudiant voit l'ensemble de ses groupes et de ses tâches, sur un seul calendrier, pour éviter les conflits. C'est la vue sur laquelle l'algorithme de planification s'appuie.
 
@@ -220,7 +228,7 @@ Style inspiré d'une vidéo de référence :
 - **meetings** : id, task_id, starts_at, ends_at.
 
 **Contraintes importantes** :
-- Unicité : `profiles.username`, `promos.code`.
+- Unicité : `users.username`, `users.email`, `promos.code`.
 - Un seul rôle `delegate` par promo.
 - Un seul `leader` par groupe.
 - Un user n'a qu'une promo active à la fois.
@@ -252,16 +260,23 @@ Style inspiré d'une vidéo de référence :
 
 ---
 
-## 10. Points à confirmer
+## 10. Décisions (4 novembre 2026)
 
-1. **Marge de 20 %** : fixe par défaut, réglable par le chef du groupe. Confirmer le réglage.
-2. **Barre d'avancement** : au prorata des jours. Confirmer.
-3. **Jours** : calendaires (week-ends inclus) ou ouvrés (lundi à vendredi) ?
-4. **Changement de deadline** : recalcul automatique de la planification, avec notification au groupe. Confirmer.
-5. **Invitation** : par nom d'utilisateur uniquement, ou aussi par email ?
-6. **Hébergement** : Vercel et Supabase, ou autre ?
-7. **Envoi d'emails** : Resend, Brevo, ou autre ? Le plan gratuit suffit pour une promo.
-8. **Auth.js** : valider ce choix à la place de Supabase Auth. Conséquence : le mot de passe et la validation d'email sont gérés par l'application, pas par Supabase.
+1. **Marge** : 20 % par défaut, réglable par le chef entre 0 et 100 %. Durée effective arrondie au jour supérieur.
+2. **Barre d'avancement** : au prorata de la durée saisie, sans la marge. Une tâche en cours compte pour 0 %.
+3. **Jours** : calendaires, week-ends inclus, parce que la promo suit les cours tous les jours.
+4. **Changement de deadline** : la planification est recalculée à la demande, donc tout de suite. Pas de notification en v1.
+5. **Invitation** : par nom d'utilisateur uniquement.
+6. **Hébergement** : Vercel + Supabase.
+7. **Envoi d'emails** : Brevo.
+8. **Auth.js** : retenu à la place de Supabase Auth. Le mot de passe et la validation d'email sont gérés par l'application.
+9. **Deadline d'une tâche** : la date de fin du groupe. Deadlines « similaires » = même date.
+10. **Suppression de la promo** : confirmation, puis les membres quittent la promo et les groupes sont supprimés.
+11. **Chef qui quitte la promo** : il nomme d'abord un successeur dans chacun de ses groupes.
+12. **Édition des tâches** : seul le chef modifie le titre, la durée, les dépendances et les assignations. Les membres changent seulement le statut.
+13. **Réunions** : grain d'un jour, sans emploi du temps importé.
+14. **Charge** : un étudiant fait au plus une tâche par jour. Une tâche multi-assignée occupe tous ses assignés en parallèle.
+15. **Vue personnelle** (§5.3) : incluse en v1.
 
 ---
 
