@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { groupProgress } from "@/lib/domain/progress";
 import type { GroupRole } from "@/generated/prisma/client";
 import { isValidSuccessor, planGroupDeparture } from "@/lib/group-departure";
 import { releaseAssignments } from "@/lib/services/departure";
@@ -97,10 +98,10 @@ export async function requireGroupRole(
 // ---------------------------------------------------------------------------
 // Lecture
 
-type Person = { id: string; username: string; firstName: string; lastName: string };
-const PERSON = { id: true, username: true, firstName: true, lastName: true } as const;
+export type Person = { id: string; username: string; firstName: string; lastName: string };
+export const PERSON = { id: true, username: true, firstName: true, lastName: true } as const;
 
-const byName = (a: Person, b: Person) =>
+export const byName = (a: Person, b: Person) =>
   a.lastName.localeCompare(b.lastName, "fr") || a.firstName.localeCompare(b.firstName, "fr");
 
 export type GroupView = {
@@ -115,6 +116,8 @@ export type GroupView = {
   pendingInvitations: { id: string; user: Person; createdAt: Date }[];
   taskCount: number;
   unassignedTaskCount: number;
+  /** Avancement en % (§4.7), au prorata des durées saisies. */
+  progressPercent: number;
 };
 
 /** Vue du groupe pour l'un de ses membres ; null pour tout autre utilisateur. */
@@ -140,7 +143,7 @@ export async function getGroupForMember(actor: Actor, groupId: string): Promise<
         orderBy: { createdAt: "asc" },
         select: { id: true, createdAt: true, invitedUser: { select: PERSON } },
       },
-      _count: { select: { tasks: true } },
+      tasks: { select: { durationDays: true, status: true } },
     },
   });
   if (!group) return null;
@@ -157,8 +160,9 @@ export async function getGroupForMember(actor: Actor, groupId: string): Promise<
       .map((m) => ({ ...m.user, role: m.role }))
       .sort((a, b) => (a.role === b.role ? byName(a, b) : a.role === "leader" ? -1 : 1)),
     pendingInvitations: group.invitations.map((i) => ({ id: i.id, user: i.invitedUser, createdAt: i.createdAt })),
-    taskCount: group._count.tasks,
+    taskCount: group.tasks.length,
     unassignedTaskCount,
+    progressPercent: groupProgress(group.tasks),
   };
 }
 

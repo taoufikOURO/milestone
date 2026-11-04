@@ -12,6 +12,7 @@ export function GroupNav({ groupId, isLeader }: { groupId: string; isLeader: boo
   const base = `/groupes/${groupId}`;
   const items = [
     { href: base, label: "Aperçu" },
+    { href: `${base}/taches`, label: "Tâches" },
     { href: `${base}/membres`, label: "Membres" },
     ...(isLeader ? [{ href: `${base}/parametres`, label: "Paramètres" }] : []),
   ];
@@ -19,7 +20,8 @@ export function GroupNav({ groupId, isLeader }: { groupId: string; isLeader: boo
     <nav aria-label="Navigation du groupe" className="-mx-1 overflow-x-auto">
       <ul className="flex gap-1 px-1">
         {items.map((item) => {
-          const active = pathname === item.href;
+          // Une page de tâche garde l'onglet « Tâches » actif.
+          const active = pathname === item.href || (item.href !== base && pathname.startsWith(`${item.href}/`));
           return (
             <li key={item.href}>
               <Link
