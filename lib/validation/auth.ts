@@ -27,7 +27,7 @@ export const usernameSchema = z
     "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, points, tirets et tirets bas.",
   );
 
-const nameSchema = (label: string) =>
+export const nameSchema = (label: string) =>
   z
     .string()
     .trim()
