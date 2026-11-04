@@ -1,4 +1,4 @@
-import { ConflictList, MeetingList, TaskList, TaskTimeline } from "@/components/calendar/parts";
+import { MonthCalendar } from "@/components/calendar/MonthCalendar";
 import { Card } from "@/components/ui/Card";
 import { formatDay } from "@/lib/format";
 import type { GroupCalendarView } from "@/lib/services/planning-view";
@@ -15,20 +15,8 @@ export function GroupCalendar({ view }: { view: GroupCalendarView }) {
             Deadline : <span className="font-semibold text-text-primary">{formatDay(view.group.endDay)}</span>
           </p>
         </div>
-        <TaskTimeline view={view} showGroup={false} label={`Calendrier du groupe ${view.group.name}`} />
-        <TaskList view={view} showGroup={false} />
+        <MonthCalendar view={view} showGroup={false} />
       </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="space-y-3">
-          <h2 className="text-lg font-bold text-text-primary">Réunions</h2>
-          <MeetingList meetings={view.meetings} showGroup={false} />
-        </Card>
-        <Card className="space-y-3">
-          <h2 className="text-lg font-bold text-text-primary">Conflits</h2>
-          <ConflictList conflicts={view.conflicts} showGroup={false} />
-        </Card>
-      </div>
     </div>
   );
 }

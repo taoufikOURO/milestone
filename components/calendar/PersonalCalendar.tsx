@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ConflictList, MeetingList, TaskList, TaskTimeline } from "@/components/calendar/parts";
+import { MonthCalendar } from "@/components/calendar/MonthCalendar";
 import { Card } from "@/components/ui/Card";
 import { formatDay } from "@/lib/format";
 import type { CalendarView } from "@/lib/services/planning-view";
@@ -25,20 +25,8 @@ export function PersonalCalendar({ view }: { view: CalendarView }) {
     <div className="space-y-6">
       <Card className="space-y-4">
         <h2 className="text-lg font-bold text-text-primary">Mes tâches</h2>
-        <TaskTimeline view={view} showGroup label="Mon calendrier" />
-        <TaskList view={view} showGroup />
+        <MonthCalendar view={view} showGroup />
       </Card>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="space-y-3">
-          <h2 className="text-lg font-bold text-text-primary">Mes réunions</h2>
-          <MeetingList meetings={view.meetings} showGroup />
-        </Card>
-        <Card className="space-y-3">
-          <h2 className="text-lg font-bold text-text-primary">Conflits de mes groupes</h2>
-          <ConflictList conflicts={view.conflicts} showGroup />
-        </Card>
-      </div>
 
       <Card className="space-y-3">
         <h2 className="text-lg font-bold text-text-primary">Mes groupes</h2>
