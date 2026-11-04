@@ -1,0 +1,11 @@
+// Étape 1 : datasource et générateur uniquement. Aucun modèle (voir étape 2).
+// L'URL de connexion est définie dans prisma.config.ts (Prisma 7).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
