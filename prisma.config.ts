@@ -9,7 +9,7 @@ try {
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
-  migrations: { path: "prisma/migrations" },
+  migrations: { path: "prisma/migrations", seed: "node prisma/seed.ts" },
   datasource: {
     // DIRECT_URL (connexion directe) pour les migrations en production,
     // DATABASE_URL en local.

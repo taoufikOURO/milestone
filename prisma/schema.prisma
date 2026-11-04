@@ -1,11 +1,237 @@
-// Étape 1 : datasource et générateur uniquement. Aucun modèle (voir étape 2).
+// Schéma Milestone v1 (cahier des charges §7 et section 10 « Décisions »).
 // L'URL de connexion est définie dans prisma.config.ts (Prisma 7).
+//
+// Contraintes ajoutées à la main dans la migration (Prisma ne les exprime pas
+// et les ignore lors des diff) : CHECK et ENABLE ROW LEVEL SECURITY.
+// Les index uniques partiels sont déclarés ici (preview feature partialIndexes)
+// pour que les migrations futures ne tentent pas de les supprimer.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum PromoRole {
+  delegate
+  member
+
+  @@map("promo_role")
+}
+
+enum GroupRole {
+  leader
+  member
+
+  @@map("group_role")
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  declined
+
+  @@map("invitation_status")
+}
+
+enum TaskStatus {
+  todo
+  in_progress
+  done
+
+  @@map("task_status")
+}
+
+enum EmailTokenType {
+  verify_email
+  reset_password
+
+  @@map("email_token_type")
+}
+
+model User {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Normalisé en minuscules par l'application avant écriture.
+  username        String    @unique @db.VarChar(30)
+  firstName       String    @map("first_name") @db.VarChar(100)
+  lastName        String    @map("last_name") @db.VarChar(100)
+  // Normalisé en minuscules par l'application avant écriture.
+  email           String    @unique @db.VarChar(254)
+  passwordHash    String    @map("password_hash")
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  emailTokens      EmailToken[]
+  promoMembership  PromoMember?
+  promosCreated    Promo[]           @relation("PromoCreatedBy")
+  groupMemberships GroupMember[]
+  groupsCreated    Group[]           @relation("GroupCreatedBy")
+  invitations      GroupInvitation[]
+  tasksCreated     Task[]            @relation("TaskCreatedBy")
+  taskAssignments  TaskAssignment[]
+
+  @@map("users")
+}
+
+model EmailToken {
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  tokenHash String         @unique @map("token_hash")
+  type      EmailTokenType
+  expiresAt DateTime       @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime?      @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("email_tokens")
+}
+
+model Promo {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @db.VarChar(100)
+  code        String   @unique @db.VarChar(16)
+  createdById String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  createdBy User?         @relation("PromoCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  members   PromoMember[]
+  groups    Group[]
+
+  @@map("promos")
+}
+
+model PromoMember {
+  promoId  String    @map("promo_id") @db.Uuid
+  // Unique : un étudiant n'appartient qu'à une seule promo à la fois.
+  userId   String    @unique @map("user_id") @db.Uuid
+  role     PromoRole @default(member)
+  joinedAt DateTime  @default(now()) @map("joined_at") @db.Timestamptz(3)
+
+  promo Promo @relation(fields: [promoId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([promoId, userId])
+  // Un seul délégué par promo.
+  @@unique([promoId], map: "promo_members_one_delegate_per_promo", where: raw("role = 'delegate'"))
+  @@map("promo_members")
+}
+
+model Group {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promoId       String   @map("promo_id") @db.Uuid
+  name          String   @db.VarChar(100)
+  startDate     DateTime @map("start_date") @db.Date
+  endDate       DateTime @map("end_date") @db.Date
+  createdById   String?  @map("created_by") @db.Uuid
+  marginPercent Int      @default(20) @map("margin_percent")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  promo       Promo             @relation(fields: [promoId], references: [id], onDelete: Cascade)
+  createdBy   User?             @relation("GroupCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  members     GroupMember[]
+  invitations GroupInvitation[]
+  tasks       Task[]
+
+  @@index([promoId])
+  @@map("groups")
+}
+
+model GroupMember {
+  groupId  String    @map("group_id") @db.Uuid
+  userId   String    @map("user_id") @db.Uuid
+  role     GroupRole @default(member)
+  joinedAt DateTime  @default(now()) @map("joined_at") @db.Timestamptz(3)
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, userId])
+  @@index([userId])
+  // Un seul chef par groupe.
+  @@unique([groupId], map: "group_members_one_leader_per_group", where: raw("role = 'leader'"))
+  @@map("group_members")
+}
+
+model GroupInvitation {
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId       String           @map("group_id") @db.Uuid
+  invitedUserId String           @map("invited_user_id") @db.Uuid
+  status        InvitationStatus @default(pending)
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  group       Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  invitedUser User  @relation(fields: [invitedUserId], references: [id], onDelete: Cascade)
+
+  @@index([invitedUserId, status])
+  // Une seule invitation en attente par (groupe, invité).
+  @@unique([groupId, invitedUserId], map: "group_invitations_one_pending", where: raw("status = 'pending'"))
+  @@map("group_invitations")
+}
+
+model Task {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  groupId      String     @map("group_id") @db.Uuid
+  title        String     @db.VarChar(200)
+  // Jours calendaires, cours inclus, sans la marge.
+  durationDays Int        @map("duration_days")
+  status       TaskStatus @default(todo)
+  createdById  String?    @map("created_by") @db.Uuid
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  group        Group            @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy    User?            @relation("TaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assignments  TaskAssignment[]
+  dependencies TaskDependency[] @relation("TaskDependsOn")
+  dependents   TaskDependency[] @relation("TaskDependedOnBy")
+  meeting      Meeting?
+
+  @@index([groupId])
+  @@map("tasks")
+}
+
+model TaskAssignment {
+  taskId String @map("task_id") @db.Uuid
+  userId String @map("user_id") @db.Uuid
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+  @@index([userId])
+  @@map("task_assignments")
+}
+
+model TaskDependency {
+  taskId          String @map("task_id") @db.Uuid
+  dependsOnTaskId String @map("depends_on_task_id") @db.Uuid
+
+  task      Task @relation("TaskDependsOn", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn Task @relation("TaskDependedOnBy", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, dependsOnTaskId])
+  @@index([dependsOnTaskId])
+  @@map("task_dependencies")
+}
+
+// Grain d'un jour (décision 13) : dates sans heure.
+model Meeting {
+  id       String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Une réunion au plus par tâche.
+  taskId   String   @unique @map("task_id") @db.Uuid
+  startsAt DateTime @map("starts_at") @db.Date
+  endsAt   DateTime @map("ends_at") @db.Date
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("meetings")
 }

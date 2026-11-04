@@ -9,8 +9,10 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "db:migrate": "prisma migrate dev",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "db:test:migrate": "node scripts/migrate-test-db.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
