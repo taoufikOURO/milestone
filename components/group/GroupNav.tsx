@@ -12,6 +12,7 @@ export function GroupNav({ groupId, isLeader }: { groupId: string; isLeader: boo
   const base = `/groupes/${groupId}`;
   const items = [
     { href: base, label: "Aperçu" },
+    { href: `${base}/calendrier`, label: "Calendrier" },
     { href: `${base}/taches`, label: "Tâches" },
     { href: `${base}/membres`, label: "Membres" },
     ...(isLeader ? [{ href: `${base}/parametres`, label: "Paramètres" }] : []),

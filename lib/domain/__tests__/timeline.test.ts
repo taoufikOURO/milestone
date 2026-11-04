@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { barLayout, displayRange } from "@/lib/domain/timeline";
+import { barLayout, dateOfDay, dayInTimeZone, dayNumber, displayRange } from "@/lib/domain/timeline";
 
 const d = (s: string) => new Date(`${s}T00:00:00Z`);
 const range = (a: string, b: string) => ({ start: d(a), end: d(b) });
@@ -53,5 +53,19 @@ describe("barLayout", () => {
   it("ignore l'heure : seul le jour compte", () => {
     const g = { start: new Date("2026-11-03T00:00:00Z"), end: new Date("2026-11-07T00:00:00Z") };
     expect(barLayout(g, window)).toEqual(barLayout(range("2026-11-03", "2026-11-07"), window));
+  });
+});
+
+describe("dayInTimeZone", () => {
+  it("donne le jour calendaire local, pas le jour UTC", () => {
+    // 23 h 30 UTC le 4 nov. : déjà le 5 à Paris (UTC+1), encore le 4 à Lomé (UTC+0).
+    const now = new Date("2026-11-04T23:30:00Z");
+    expect(dayInTimeZone(now, "Africa/Lome")).toBe(dayNumber(d("2026-11-04")));
+    expect(dayInTimeZone(now, "Europe/Paris")).toBe(dayNumber(d("2026-11-05")));
+    expect(dayInTimeZone(new Date("2026-11-05T02:00:00Z"), "America/New_York")).toBe(dayNumber(d("2026-11-04")));
+  });
+
+  it("dateOfDay est l'inverse de dayNumber", () => {
+    expect(dateOfDay(dayNumber(d("2026-11-10")))).toEqual(d("2026-11-10"));
   });
 });

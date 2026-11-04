@@ -14,6 +14,24 @@ export type BarLayout = {
 /** Numéro de jour (jours depuis 1970-01-01 UTC). */
 export const dayNumber = (date: Date) => Math.floor(date.getTime() / DAY_MS);
 
+/** Colonne DATE (minuit UTC) d'un numéro de jour. */
+export const dateOfDay = (day: number) => new Date(day * DAY_MS);
+
+/**
+ * Numéro du jour calendaire de `now` dans le fuseau `timeZone` (ex. le
+ * 4 novembre à 23 h 30 à Lomé, quelle que soit l'heure UTC).
+ */
+export function dayInTimeZone(now: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const get = (type: string) => Number(parts.find((p) => p.type === type)!.value);
+  return Math.floor(Date.UTC(get("year"), get("month") - 1, get("day")) / DAY_MS);
+}
+
 /** Nombre de jours de la période, bornes incluses (début = fin → 1). */
 export const spanDays = (range: DateRange) => dayNumber(range.end) - dayNumber(range.start) + 1;
 
