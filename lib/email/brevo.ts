@@ -1,4 +1,9 @@
-import { EmailDeliveryError, type EmailMessage, type EmailTransport } from "./types";
+import {
+  EmailDeliveryError,
+  type EmailFailureReason,
+  type EmailMessage,
+  type EmailTransport,
+} from "./types";
 
 const BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
 
@@ -24,10 +29,11 @@ type BrevoOptions = {
  */
 export function createBrevoTransport({ apiKey, from, fetchImpl = fetch }: BrevoOptions): EmailTransport {
   return {
+    kind: "brevo",
     async send(message: EmailMessage) {
-      if (!apiKey) throw new EmailDeliveryError("BREVO_API_KEY est manquante.");
+      if (!apiKey) throw new EmailDeliveryError("BREVO_API_KEY est manquante.", "config");
       const sender = from ? parseSender(from) : null;
-      if (!sender) throw new EmailDeliveryError("MAIL_FROM est manquante ou invalide.");
+      if (!sender) throw new EmailDeliveryError("MAIL_FROM est manquante ou invalide.", "config");
 
       let response: Response;
       try {
@@ -48,12 +54,44 @@ export function createBrevoTransport({ apiKey, from, fetchImpl = fetch }: BrevoO
           signal: AbortSignal.timeout(10_000),
         });
       } catch {
-        throw new EmailDeliveryError("Brevo injoignable.");
+        throw new EmailDeliveryError("Brevo injoignable.", "unavailable");
       }
       if (!response.ok) {
-        // Le corps de la réponse n'est pas recopié : il peut contenir des données du compte.
-        throw new EmailDeliveryError(`Brevo a refusé l'envoi (HTTP ${response.status}).`);
+        const { code, mentionsSender } = await readBrevoError(response);
+        // Seuls le statut et le code Brevo sont journalisés : le message brut peut
+        // contenir des données du compte.
+        throw new EmailDeliveryError(
+          `Brevo a refusé l'envoi (HTTP ${response.status}${code ? `, ${code}` : ""}).`,
+          classifyBrevoError(response.status, code, mentionsSender),
+        );
       }
     },
   };
+}
+
+async function readBrevoError(response: Response): Promise<{ code?: string; mentionsSender: boolean }> {
+  try {
+    const body: unknown = await response.json();
+    if (!body || typeof body !== "object") return { mentionsSender: false };
+    const { code, message } = body as { code?: unknown; message?: unknown };
+    return {
+      code: typeof code === "string" && /^[a-z_]{1,64}$/.test(code) ? code : undefined,
+      mentionsSender: typeof message === "string" && /sender|expéditeur/i.test(message),
+    };
+  } catch {
+    return { mentionsSender: false };
+  }
+}
+
+/** Traduit un refus Brevo en cause affichable (sans détail du compte). */
+export function classifyBrevoError(
+  status: number,
+  code: string | undefined,
+  mentionsSender: boolean,
+): EmailFailureReason {
+  if (status === 401 || code === "unauthorized") return "unauthorized";
+  if (status === 402 || status === 429 || code === "not_enough_credits") return "quota";
+  if (mentionsSender) return "sender";
+  if (status >= 500) return "unavailable";
+  return "rejected";
 }

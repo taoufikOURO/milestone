@@ -38,6 +38,27 @@ describe("transport Brevo", () => {
     await expect(t.send(message)).rejects.toThrow("HTTP 401");
   });
 
+  it.each([
+    [401, { code: "unauthorized", message: "Key not found" }, "unauthorized"],
+    [400, { code: "invalid_parameter", message: "Sender is not valid" }, "sender"],
+    [402, { code: "not_enough_credits", message: "Not enough credits" }, "quota"],
+    [429, { code: "too_many_requests", message: "Too many requests" }, "quota"],
+    [503, {}, "unavailable"],
+  ] as const)("classe un refus HTTP %i en cause « %s »", async (status, body, reason) => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status }));
+    const t = createBrevoTransport({ apiKey: "cle-secrete", from: "no-reply@example.test", fetchImpl });
+    const error = await t.send(message).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(EmailDeliveryError);
+    expect((error as EmailDeliveryError).reason).toBe(reason);
+    // Le message brut de Brevo et la clé ne sont jamais recopiés.
+    expect((error as Error).message).not.toMatch(/cle-secrete|Key not found|Sender is not valid/);
+  });
+
+  it("indique le transport utilisé", () => {
+    const t = createBrevoTransport({ apiKey: "k", from: "x@example.test", fetchImpl: vi.fn() });
+    expect(t.kind).toBe("brevo");
+  });
+
   it("lit l'expéditeur avec ou sans nom", () => {
     expect(parseSender("no-reply@example.test")).toEqual({ email: "no-reply@example.test" });
     expect(parseSender("pas une adresse")).toBeNull();

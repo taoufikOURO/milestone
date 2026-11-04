@@ -8,6 +8,7 @@ const sent = vi.hoisted(() => [] as EmailMessage[]);
 vi.mock("@/lib/email", () => ({
   sendEmail: async (m: EmailMessage) => {
     sent.push(m);
+    return { transport: "console" };
   },
 }));
 
@@ -154,7 +155,10 @@ describe("renvoi du mail de validation", () => {
     const tooSoon = await resendVerificationEmail(user.id, later(now, 10_000));
     expect(tooSoon).toMatchObject({ ok: false, error: "rate_limited", retryAfterSeconds: 50 });
 
-    expect(await resendVerificationEmail(user.id, later(now, 61_000))).toEqual({ ok: true });
+    expect(await resendVerificationEmail(user.id, later(now, 61_000))).toEqual({
+      ok: true,
+      transport: "console",
+    });
     const second = lastToken("verifier-email");
     expect(second).not.toBe(first);
 

@@ -4,7 +4,13 @@ import { hashPassword, verifyAgainstDummy, verifyPassword } from "@/lib/auth/pas
 import { checkEmailRateLimit, EMAIL_WINDOW_MS } from "@/lib/auth/rate-limit";
 import { consumeToken, issueToken, type TokenState } from "@/lib/auth/tokens";
 import { getAppUrl } from "@/lib/config";
-import { sendEmail, type EmailMessage } from "@/lib/email";
+import { sendEmail } from "@/lib/email";
+import {
+  EmailDeliveryError,
+  type EmailFailureReason,
+  type EmailMessage,
+  type EmailTransportKind,
+} from "@/lib/email/types";
 import {
   accountExistsMessage,
   resetPasswordMessage,
@@ -22,14 +28,18 @@ import {
 
 export const USERNAME_TAKEN = "Ce nom d'utilisateur est déjà pris.";
 
+type SendOutcome =
+  | { ok: true; transport: EmailTransportKind }
+  | { ok: false; reason: EmailFailureReason };
+
 /** Envoi sans faire échouer l'action appelante : l'utilisateur peut renvoyer le mail. */
-async function trySend(message: EmailMessage): Promise<boolean> {
+async function trySend(message: EmailMessage): Promise<SendOutcome> {
   try {
-    await sendEmail(message);
-    return true;
+    const { transport } = await sendEmail(message);
+    return { ok: true, transport };
   } catch (error) {
     console.error("Échec de l'envoi d'email :", error instanceof Error ? error.message : error);
-    return false;
+    return { ok: false, reason: error instanceof EmailDeliveryError ? error.reason : "rejected" };
   }
 }
 
@@ -153,8 +163,9 @@ export async function verifyEmail(token: unknown, now: Date = new Date()): Promi
 }
 
 export type ResendResult =
-  | { ok: true }
-  | { ok: false; error: "already_verified" | "send_failed" }
+  | { ok: true; transport: EmailTransportKind }
+  | { ok: false; error: "already_verified" }
+  | { ok: false; error: "send_failed"; reason: EmailFailureReason }
   | { ok: false; error: "rate_limited"; retryAfterSeconds: number };
 
 /** `userId` vient de la session, jamais du formulaire. */
@@ -174,7 +185,9 @@ export async function resendVerificationEmail(
     return { ok: false, error: "rate_limited", retryAfterSeconds: limit.retryAfterSeconds };
   }
   const sent = await sendVerificationEmail(user, now);
-  return sent ? { ok: true } : { ok: false, error: "send_failed" };
+  return sent.ok
+    ? { ok: true, transport: sent.transport }
+    : { ok: false, error: "send_failed", reason: sent.reason };
 }
 
 // ─── Réinitialisation du mot de passe ────────────────────────────────────────

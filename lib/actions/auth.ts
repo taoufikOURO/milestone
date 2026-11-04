@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { signIn, signOut } from "@/auth";
 import { requireUser } from "@/lib/auth/guards";
 import { db } from "@/lib/db";
+import type { EmailFailureReason } from "@/lib/email";
 import { HOME_PATH, safeCallbackPath, SIGN_IN_PATH, VERIFY_EMAIL_PATH } from "@/lib/routes";
 import {
   registerUser,
@@ -79,13 +80,30 @@ export async function resendVerificationAction(): Promise<FormState> {
   // L'utilisateur vient de la session, jamais du formulaire.
   const user = await requireUser();
   const result = await resendVerificationEmail(user.id);
-  if (result.ok) return { message: `Un nouveau lien a été envoyé à ${user.email}.` };
+  if (result.ok) {
+    if (result.transport === "console") return { message: CONSOLE_TRANSPORT_MESSAGE };
+    return { message: `Un nouveau lien a été envoyé à ${user.email}.` };
+  }
   if (result.error === "already_verified") redirect(HOME_PATH);
   if (result.error === "rate_limited") {
     return { error: `Patientez ${formatDelay(result.retryAfterSeconds)} avant de renvoyer le mail.` };
   }
-  return { error: "L'email n'a pas pu être envoyé. Réessayez dans quelques instants." };
+  return { error: EMAIL_FAILURE_MESSAGES[result.reason] };
 }
+
+const CONSOLE_TRANSPORT_MESSAGE = "Mode développement : le lien est affiché dans le terminal.";
+
+/** Messages affichés : la cause est explicite, sans clé, statut ni réponse brute du fournisseur. */
+const EMAIL_FAILURE_MESSAGES: Record<EmailFailureReason, string> = {
+  config: "L'envoi d'email n'est pas configuré sur le serveur. Contactez l'administrateur.",
+  unauthorized:
+    "Le service d'email a refusé la clé API du serveur. Contactez l'administrateur.",
+  sender:
+    "L'adresse d'expédition n'est pas validée auprès du service d'email. Contactez l'administrateur.",
+  quota: "Le quota d'envoi d'emails est atteint. Réessayez plus tard.",
+  unavailable: "Le service d'email est injoignable. Réessayez dans quelques instants.",
+  rejected: "Le service d'email a refusé l'envoi. Réessayez dans quelques instants.",
+};
 
 function formatDelay(seconds: number): string {
   if (seconds < 60) return `${seconds} seconde${seconds > 1 ? "s" : ""}`;

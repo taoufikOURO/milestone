@@ -1,8 +1,15 @@
 import { createBrevoTransport } from "./brevo";
 import { consoleTransport } from "./console";
-import type { EmailMessage, EmailTransport } from "./types";
+import type { EmailDelivery, EmailMessage, EmailTransport } from "./types";
 
-export { EmailDeliveryError, type EmailMessage, type EmailTransport } from "./types";
+export {
+  EmailDeliveryError,
+  type EmailDelivery,
+  type EmailFailureReason,
+  type EmailMessage,
+  type EmailTransport,
+  type EmailTransportKind,
+} from "./types";
 
 /**
  * Brevo en production, console ailleurs. EMAIL_TRANSPORT=brevo permet de
@@ -18,6 +25,8 @@ export function getEmailTransport(): EmailTransport {
   });
 }
 
-export async function sendEmail(message: EmailMessage): Promise<void> {
-  await getEmailTransport().send(message);
+export async function sendEmail(message: EmailMessage): Promise<EmailDelivery> {
+  const transport = getEmailTransport();
+  await transport.send(message);
+  return { transport: transport.kind };
 }

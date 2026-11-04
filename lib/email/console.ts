@@ -2,6 +2,7 @@ import type { EmailMessage, EmailTransport } from "./types";
 
 /** Transport de développement : affiche l'email dans la console du serveur. */
 export const consoleTransport: EmailTransport = {
+  kind: "console",
   async send(message: EmailMessage) {
     console.info(
       [
