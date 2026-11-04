@@ -6,12 +6,15 @@
 export const HOME_PATH = "/";
 export const SIGN_IN_PATH = "/connexion";
 export const VERIFY_EMAIL_PATH = "/verifier-email";
+/** Supprime le cookie d'une session refusée, puis renvoie vers la connexion. */
+export const SESSION_EXPIRED_PATH = "/session-expiree";
+export const SESSION_EXPIRED_SIGN_IN = `${SIGN_IN_PATH}?session=expiree`;
 
 /** Pages réservées aux visiteurs non connectés. */
 const GUEST_ONLY = ["/connexion", "/inscription"];
 
 /** Pages accessibles sans session. */
-const PUBLIC_EXACT = ["/", "/connexion", "/inscription", "/mot-de-passe-oublie"];
+const PUBLIC_EXACT = ["/", "/connexion", "/inscription", "/mot-de-passe-oublie", SESSION_EXPIRED_PATH];
 const PUBLIC_PREFIXES = ["/reinitialiser/", "/verifier-email/"];
 
 export function isPublicPath(pathname: string): boolean {

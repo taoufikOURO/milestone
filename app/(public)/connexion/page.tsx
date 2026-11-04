@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { SignInForm } from "@/components/auth/forms";
 import { Alert, AuthShell } from "@/components/auth/ui";
+import { SESSION_EXPIRED_MESSAGE } from "@/lib/auth/session";
 import { safeCallbackPath } from "@/lib/routes";
 
 export const metadata: Metadata = { title: "Connexion · Milestone" };
@@ -38,6 +39,7 @@ async function ConnexionContent({ searchParams }: Pick<PageProps<"/connexion">, 
           validez votre adresse grâce au lien reçu.
         </Alert>
       ) : null}
+      {params.session === "expiree" ? <Alert tone="info">{SESSION_EXPIRED_MESSAGE}</Alert> : null}
       {params.reinitialisation === "ok" ? (
         <Alert tone="info">Mot de passe modifié. Vous pouvez vous connecter.</Alert>
       ) : null}

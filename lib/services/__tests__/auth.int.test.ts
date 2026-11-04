@@ -14,6 +14,8 @@ vi.mock("@/lib/email", () => ({
 // Session simulée pour les guards.
 const session = vi.hoisted(() => ({ current: null as null | { user: { id: string } } }));
 vi.mock("@/auth", () => ({ auth: async () => session.current }));
+// Aucun cookie de session résiduel.
+vi.mock("next/headers", () => ({ cookies: async () => ({ getAll: () => [] }) }));
 
 const {
   authenticate,
@@ -193,9 +195,9 @@ describe("requireVerifiedUser (§11 critère 1)", () => {
     await expect(requireVerifiedUser()).rejects.toEqual(redirectTo("/verifier-email"));
   });
 
-  it("renvoie vers la connexion si le compte de la session n'existe plus", async () => {
+  it("fait supprimer la session si son compte n'existe plus", async () => {
     session.current = { user: { id: "00000000-0000-0000-0000-000000000000" } };
-    await expect(requireVerifiedUser()).rejects.toEqual(redirectTo("/connexion"));
+    await expect(requireVerifiedUser()).rejects.toEqual(redirectTo("/session-expiree"));
   });
 });
 

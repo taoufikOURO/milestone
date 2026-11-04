@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/auth.config";
 import { authenticate } from "@/lib/services/auth";
+import { sessionJwtCallback } from "@/lib/services/session";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -11,6 +12,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (error.name === "CredentialsSignin") return;
       console.error(error);
     },
+  },
+  callbacks: {
+    ...authConfig.callbacks,
+    // Refuse une session ouverte avant le dernier changement de mot de passe.
+    jwt: sessionJwtCallback,
   },
   providers: [
     Credentials({

@@ -49,6 +49,23 @@ async function sendVerificationEmail(user: { id: string; email: string }, now: D
   return trySend(verifyEmailMessage(user.email, `${getAppUrl()}/verifier-email/${token}`));
 }
 
+/**
+ * Seul point d'écriture d'un nouveau mot de passe (réinitialisation, et profil
+ * à l'étape 11) : `password_changed_at` est toujours mis à jour avec le hash,
+ * ce qui invalide toutes les sessions ouvertes avant `now`.
+ */
+export async function setPassword(
+  tx: Pick<Prisma.TransactionClient, "user">,
+  userId: string,
+  passwordHash: string,
+  now: Date,
+): Promise<void> {
+  await tx.user.update({
+    where: { id: userId },
+    data: { passwordHash, passwordChangedAt: now },
+  });
+}
+
 // ─── Inscription ─────────────────────────────────────────────────────────────
 
 export type RegisterResult = { ok: true } | { ok: false; errors: FieldErrors };
@@ -203,7 +220,7 @@ export async function resetPassword(input: unknown, now: Date = new Date()): Pro
   return db.$transaction(async (tx) => {
     const result = await consumeToken(tx, parsed.data.token, "reset_password", now);
     if (!result.ok) return result;
-    await tx.user.update({ where: { id: result.userId }, data: { passwordHash } });
+    await setPassword(tx, result.userId, passwordHash, now);
     // Les autres liens de réinitialisation encore valides sont invalidés.
     await tx.emailToken.updateMany({
       where: { userId: result.userId, type: "reset_password", usedAt: null },

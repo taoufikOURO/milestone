@@ -3,7 +3,7 @@ import { proxyRedirect, safeCallbackPath } from "@/lib/routes";
 
 describe("redirections du proxy", () => {
   it("laisse passer les pages publiques sans session", () => {
-    for (const p of ["/", "/connexion", "/inscription", "/mot-de-passe-oublie", "/reinitialiser/abc", "/verifier-email/abc"]) {
+    for (const p of ["/", "/connexion", "/inscription", "/mot-de-passe-oublie", "/reinitialiser/abc", "/verifier-email/abc", "/session-expiree"]) {
       expect(proxyRedirect(p, "", false)).toBeNull();
     }
   });
