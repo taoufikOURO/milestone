@@ -2,8 +2,8 @@
 // Ces règles sont un confort de navigation, pas une protection : les droits
 // sont vérifiés par les guards (lib/auth/guards.ts) et les services.
 
-/** Destination après connexion d'un utilisateur validé (l'accueil arrive à l'étape 4). */
-export const HOME_PATH = "/";
+/** Destination après connexion d'un utilisateur validé. */
+export const HOME_PATH = "/accueil";
 export const SIGN_IN_PATH = "/connexion";
 export const VERIFY_EMAIL_PATH = "/verifier-email";
 /** Supprime le cookie d'une session refusée, puis renvoie vers la connexion. */

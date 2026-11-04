@@ -14,8 +14,8 @@ describe("redirections du proxy", () => {
   });
 
   it("renvoie un utilisateur connecté hors des pages de connexion et d'inscription", () => {
-    expect(proxyRedirect("/connexion", "", true)).toBe("/");
-    expect(proxyRedirect("/inscription", "", true)).toBe("/");
+    expect(proxyRedirect("/connexion", "", true)).toBe("/accueil");
+    expect(proxyRedirect("/inscription", "", true)).toBe("/accueil");
     expect(proxyRedirect("/verifier-email", "", true)).toBeNull();
   });
 });
