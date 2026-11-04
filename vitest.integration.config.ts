@@ -11,7 +11,7 @@ export default defineConfig({
     environment: "node",
     include: ["**/__tests__/**/*.int.test.ts"],
     exclude: ["node_modules/**", ".next/**", "generated/**"],
-    setupFiles: ["./tests/load-env.ts"],
+    setupFiles: ["./tests/load-env.ts", "./tests/use-test-db.ts"],
     // Les suites partagent une seule base : pas d'exécution en parallèle.
     fileParallelism: false,
   },

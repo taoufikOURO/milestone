@@ -24,7 +24,9 @@ export function getTestDatabaseUrl(): string {
   if (!url) {
     throw new Error("TEST_DATABASE_URL est manquante dans .env.");
   }
-  if (url === process.env.DATABASE_URL) {
+  // Après tests/use-test-db.ts, DATABASE_URL vaut volontairement TEST_DATABASE_URL
+  // (vérification déjà faite à ce moment-là).
+  if (process.env.MILESTONE_DB_IS_TEST !== "1" && url === process.env.DATABASE_URL) {
     throw new Error("TEST_DATABASE_URL doit être différente de DATABASE_URL.");
   }
   const dbName = new URL(url).pathname.replace(/^\//, "");
