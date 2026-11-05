@@ -1,13 +1,12 @@
 "use client";
 
-import { CalendarX2, ChevronLeft, ChevronRight, Flag, MousePointerClick, TriangleAlert, Users, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flag, MousePointerClick, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { personName } from "@/components/calendar/parts";
-import { Badge } from "@/components/ui/Badge";
+import { DayItems, ConflictItems, longDay, taskHref, type DayContent } from "@/components/calendar/DayItems";
+import { MobileMonth } from "@/components/calendar/MobileMonth";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/EmptyState";
 import {
   daysInMonth,
   deadlinesByDay,
@@ -17,37 +16,24 @@ import {
   monthWeeks,
   shiftMonth,
   type BlockInput,
-  type DeadlineMarker,
   type YearMonth,
 } from "@/lib/domain/month-grid";
 import { dateOfDay } from "@/lib/domain/timeline";
 import { formatDay } from "@/lib/format";
-import type { CalendarConflict, CalendarMeeting, CalendarTask, CalendarView } from "@/lib/services/planning-view";
+import type { CalendarConflict, CalendarView } from "@/lib/services/planning-view";
 
 // Calendrier mensuel fait maison (§5.2, §5.3). À partir de md : grille de 7
-// colonnes, lundi en premier, une ligne par semaine ; en dessous : une liste par
-// jour. Aucune donnée n'est chargée ici : tout vient de la vue déjà projetée.
+// colonnes, lundi en premier, une ligne par semaine ; en dessous : grille compacte
+// avec panneau du bas (MobileMonth). Aucune donnée n'est chargée ici : tout vient de la vue déjà projetée.
 
-const STATUS_LABEL = { todo: "À faire", in_progress: "En cours", done: "Terminée" } as const;
 const WEEKDAYS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
 const LANE_REM = 1.5;
 const HEADER_REM = 1.75;
 const MARKER_REM = 1.25;
 
 const monthFormat = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
-const longDayFormat = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
 const monthLabel = (ym: YearMonth) => monthFormat.format(dateOfDay(firstDayOfMonth(ym)));
-const longDay = (day: number) => longDayFormat.format(dateOfDay(day));
 const dayOfMonth = (day: number) => dateOfDay(day).getUTCDate();
-const taskHref = (groupId: string, taskId: string) => `/groupes/${groupId}/taches/${taskId}`;
-const assignees = (t: CalendarTask) => (t.assignees.length > 0 ? t.assignees.map(personName).join(", ") : "Personne");
-
-type DayContent = {
-  tasks: CalendarTask[];
-  meetings: CalendarMeeting[];
-  conflicts: CalendarConflict[];
-  deadlines: DeadlineMarker[];
-};
 
 export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGroup: boolean }) {
   const [ym, setYm] = useState<YearMonth>(() => monthOfDay(view.today));
@@ -97,11 +83,6 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
     setSelected(null);
   };
   const todayInMonth = view.today >= first && view.today <= last;
-  const monthDays = Array.from({ length: last - first + 1 }, (_, i) => first + i);
-  const busyDays = monthDays.filter((d) => {
-    const c = contentOf(d);
-    return c.tasks.length + c.meetings.length + c.conflicts.length + c.deadlines.length > 0;
-  });
   const selectedContent = selected !== null ? contentOf(selected) : null;
 
   return (
@@ -259,27 +240,9 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
         )}
       </div>
 
-      {/* Liste par jour : sous md */}
+      {/* Grille compacte : sous md */}
       <div className="md:hidden">
-        {busyDays.length === 0 ? (
-          <EmptyState icon={CalendarX2} compact>
-            Rien de planifié en {monthLabel(ym)}.
-          </EmptyState>
-        ) : (
-          <ol className="space-y-3">
-            {busyDays.map((day) => (
-              <li key={day} className="rounded-card border border-line bg-surface p-3.5">
-                <h4
-                  className={`font-display text-sm font-bold capitalize ${day === view.today ? "text-accent-strong" : "text-text-primary"}`}
-                >
-                  {longDay(day)}
-                  {day === view.today ? " · aujourd'hui" : ""}
-                </h4>
-                <DayItems content={contentOf(day)} showGroup={showGroup} day={day} />
-              </li>
-            ))}
-          </ol>
-        )}
+        <MobileMonth ym={ym} today={view.today} contentOf={contentOf} conflictDays={conflictDays} showGroup={showGroup} />
       </div>
 
       {undated.length > 0 ? (
@@ -309,7 +272,7 @@ function NavButton({
       onClick={onClick}
       aria-label={label}
       disabled={disabled}
-      className="min-h-9 px-3 py-1.5 text-sm"
+      className="min-h-11 px-3 py-1.5 text-sm md:min-h-9"
     >
       {children}
     </Button>
@@ -341,85 +304,3 @@ function DayPanel({
   );
 }
 
-function DayItems({ content, showGroup, day }: { content: DayContent; showGroup: boolean; day: number }) {
-  const { tasks, meetings, conflicts, deadlines } = content;
-  if (tasks.length + meetings.length + conflicts.length + deadlines.length === 0) {
-    return (
-      <p className="flex items-center gap-2 text-sm text-text-secondary">
-        <CalendarX2 aria-hidden className="size-4 shrink-0 text-muted" />
-        Rien de planifié ce jour-là.
-      </p>
-    );
-  }
-  return (
-    <div className="mt-1 space-y-2">
-      <ul className="space-y-1.5">
-        {deadlines.map((d) => (
-          <li key={`d:${d.groupId}`} className="text-sm">
-            <p className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full border border-border-soft bg-border-soft/20 px-2.5 py-0.5 text-xs leading-5 font-semibold text-text-primary">
-                <Flag aria-hidden className="size-3.5" />
-                Deadline
-              </span>
-              <span className="min-w-0 break-words font-semibold text-text-primary">{d.groupName}</span>
-            </p>
-          </li>
-        ))}
-        {meetings.map((m) => (
-          <li key={`m:${m.taskId}`} className="text-sm">
-            <p className="flex flex-wrap items-center gap-2">
-              <Badge tone="dark">
-                <Users aria-hidden />
-                Réunion
-              </Badge>
-              <Link href={taskHref(m.groupId, m.taskId)} className="min-w-0 break-words font-semibold text-text-primary hover:text-accent-strong">
-                {m.taskTitle}
-              </Link>
-              {showGroup ? <span className="text-xs text-text-secondary">{m.groupName}</span> : null}
-            </p>
-            <p className="break-words text-text-secondary">{m.attendees.map(personName).join(", ")}</p>
-          </li>
-        ))}
-        {tasks.map((t) => (
-          <li key={`t:${t.id}`} className="text-sm">
-            <p className="flex flex-wrap items-center gap-2">
-              <Link href={taskHref(t.groupId, t.id)} className="min-w-0 break-words font-semibold text-text-primary hover:text-accent-strong">
-                {t.title}
-              </Link>
-              <Badge>{STATUS_LABEL[t.status]}</Badge>
-              {t.daysLate > 0 ? <Badge tone="alert">{t.daysLate} j de retard</Badge> : null}
-              {day > t.deadline ? <Badge tone="alert">Après la deadline</Badge> : null}
-            </p>
-            <p className="break-words text-text-secondary">
-              {formatDay(t.start)} → {formatDay(t.end)}
-              {showGroup ? ` · ${t.groupName}` : ""} · {assignees(t)}
-            </p>
-          </li>
-        ))}
-      </ul>
-      {conflicts.length > 0 ? <ConflictItems conflicts={conflicts} showGroup={showGroup} /> : null}
-    </div>
-  );
-}
-
-function ConflictItems({ conflicts, showGroup }: { conflicts: CalendarConflict[]; showGroup: boolean }) {
-  return (
-    <ul className="space-y-2">
-      {conflicts.map((c) => (
-        <li key={c.key} className="rounded-card border border-accent/30 bg-accent-soft p-3 text-sm">
-          <p className="flex flex-wrap items-center gap-2">
-            <Badge tone="accent">
-              <TriangleAlert aria-hidden />
-              {c.title}
-            </Badge>
-            <Link href={taskHref(c.groupId, c.taskId)} className="min-w-0 break-words font-semibold text-text-primary hover:text-accent-strong">
-              {c.taskTitle}
-            </Link>
-            {showGroup ? <span className="text-xs text-text-secondary">{c.groupName}</span> : null}
-          </p>
-          <p className="mt-1 break-words text-text-secondary">{c.detail}</p>
-        </li>
-      ))}
-    </ul>
-  );
-}

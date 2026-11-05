@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clipToWeek,
+  dayDots,
   daysInMonth,
   deadlinesByDay,
   firstDayOfMonth,
@@ -245,5 +246,41 @@ describe("deadlinesByDay", () => {
     ];
     expect(deadlinesByDay(groups).get(d)).toEqual(expected);
     expect(deadlinesByDay([...groups].reverse()).get(d)).toEqual(expected);
+  });
+});
+
+describe("dayDots", () => {
+  const d = day(2026, 11, 10);
+
+  it("ne renvoie rien pour un jour vide", () => {
+    expect(dayDots(d, { tasks: [], meetings: 0, deadlines: 0 })).toEqual({ dots: [], more: 0 });
+  });
+
+  it("ordonne dépassement, deadline, tâche, réunion", () => {
+    const r = dayDots(d, { tasks: [{ deadline: d + 5 }, { deadline: d - 1 }], meetings: 1, deadlines: 1 });
+    expect(r).toEqual({ dots: ["overdue", "deadline", "task"], more: 1 });
+  });
+
+  it("plafonne à trois pastilles et compte le reste", () => {
+    const tasks = Array.from({ length: 5 }, () => ({ deadline: d + 5 }));
+    expect(dayDots(d, { tasks, meetings: 2, deadlines: 0 })).toEqual({
+      dots: ["task", "task", "task"],
+      more: 4,
+    });
+  });
+
+  it("garde la réunion en dernier, donc dans le « + n » s'il y a déjà trois pastilles", () => {
+    const r = dayDots(d, { tasks: [{ deadline: d - 1 }, { deadline: d + 1 }, { deadline: d + 1 }], meetings: 1, deadlines: 0 });
+    expect(r.dots).toEqual(["overdue", "task", "task"]);
+    expect(r.more).toBe(1);
+  });
+
+  it("jour de deadline avec une tâche en dépassement : rouge puis drapeau", () => {
+    const r = dayDots(d, { tasks: [{ deadline: d - 2 }], meetings: 0, deadlines: 1 });
+    expect(r).toEqual({ dots: ["overdue", "deadline"], more: 0 });
+  });
+
+  it("la deadline elle-même n'est pas un dépassement", () => {
+    expect(dayDots(d, { tasks: [{ deadline: d }], meetings: 0, deadlines: 0 }).dots).toEqual(["task"]);
   });
 });

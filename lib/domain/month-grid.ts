@@ -158,3 +158,29 @@ export function layoutWeek(monday: number, items: readonly BlockInput[]): WeekBl
     return { id, col, span, lane, continuesBefore, continuesAfter, normalSpan };
   });
 }
+
+export type DotKind = "task" | "meeting" | "deadline" | "overdue";
+
+/** Nombre maximal de pastilles visibles dans une case de la grille compacte. */
+export const MAX_DAY_DOTS = 3;
+
+/**
+ * Pastilles d'une journée pour la grille compacte (mobile). Ordre : tâches
+ * en dépassement, deadlines, tâches dans les délais, réunions. Au plus
+ * `MAX_DAY_DOTS` visibles ; `more` compte les autres (« + n »). Une tâche est en
+ * dépassement le jour où elle est au-delà de la deadline de son groupe.
+ * `tasks` ne contient que les tâches planifiées ce jour-là.
+ */
+export function dayDots(
+  day: number,
+  content: { tasks: readonly { deadline: number }[]; meetings: number; deadlines: number },
+): { dots: DotKind[]; more: number } {
+  const overdue = content.tasks.filter((t) => day > t.deadline).length;
+  const all: DotKind[] = [
+    ...Array<DotKind>(overdue).fill("overdue"),
+    ...Array<DotKind>(content.deadlines).fill("deadline"),
+    ...Array<DotKind>(content.tasks.length - overdue).fill("task"),
+    ...Array<DotKind>(content.meetings).fill("meeting"),
+  ];
+  return { dots: all.slice(0, MAX_DAY_DOTS), more: Math.max(0, all.length - MAX_DAY_DOTS) };
+}

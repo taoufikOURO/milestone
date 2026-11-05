@@ -133,6 +133,17 @@ body {
   }
 }
 
+/* Panneau du bas du calendrier mobile. */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+dialog[open].animate-sheet {
+  animation: sheet-in var(--duration-base) var(--ease-out-soft);
+}
+
 dialog[open].animate-dialog {
   animation: dialog-in var(--duration-base) var(--ease-out-soft);
 }
