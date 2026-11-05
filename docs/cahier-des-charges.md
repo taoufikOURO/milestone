@@ -92,7 +92,7 @@ L'application ne planifie pas par groupe, mais **par étudiant, sur toute la pro
 ### 4.5 Tâches
 
 - Chaque tâche a : **titre**, **durée en jours**, **assignés** (un ou plusieurs membres), **dépendances** (zéro, une ou plusieurs autres tâches du même groupe).
-- La durée est saisie par l'étudiant, en jours, cours inclus. L'application ne demande pas d'heures.
+- La durée est saisie par l'étudiant, en jours, cours inclus. L'application ne demande pas d'heures. C'est un nombre entier compris entre **1 et 1000 jours** ; une durée hors de ces bornes est refusée.
 - **Une tâche assignée à une seule personne** : aucune réunion n'est créée.
 - **Une tâche assignée à plusieurs personnes** : l'application propose un jour de réunion qui tient compte de la disponibilité de chacun. Le grain est d'un jour, sans emploi du temps importé : la réunion tombe le premier jour, dans la fenêtre de la tâche, où aucun assigné n'est occupé par une autre tâche planifiée.
 - **Dépendances** : une tâche ne peut être planifiée qu'une fois toutes ses dépendances terminées. Une dépendance circulaire est refusée.
@@ -117,6 +117,8 @@ Règles de priorité lorsque deux projets se chevauchent :
 2. Trier les tâches par urgence (deadline la plus proche d'abord, avec une pondération de la charge).
 3. Affecter les tâches aux étudiants disponibles.
 4. Signaler les conflits : une deadline qui ne peut pas être tenue, ou une tâche sans assigné.
+
+**Affichage des conflits** : dans les calendriers (§5.2, §5.3), un conflit est rattaché au **dernier jour de sa tâche planifiée** (sa fin prévue). Un conflit dont la tâche ne peut pas être planifiée (sans assigné, dépendance bloquée ou circulaire) n'a pas de jour : il est listé à part, dans « Conflits sans date ».
 
 Un solveur (OR-Tools) n'est pas prévu en v1.
 
@@ -277,6 +279,8 @@ Style inspiré d'une vidéo de référence :
 13. **Réunions** : grain d'un jour, sans emploi du temps importé.
 14. **Charge** : un étudiant fait au plus une tâche par jour. Une tâche multi-assignée occupe tous ses assignés en parallèle.
 15. **Vue personnelle** (§5.3) : incluse en v1.
+16. **Durée d'une tâche** : entre 1 et 1000 jours (borne technique, bien au-delà de la durée d'un projet).
+17. **Conflits dans les calendriers** : rattachés au dernier jour de la tâche planifiée ; sans tâche planifiée, listés dans « Conflits sans date ».
 
 ---
 

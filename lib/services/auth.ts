@@ -143,6 +143,20 @@ export async function authenticate(input: unknown): Promise<AuthenticatedUser | 
   return ok ? { id: user.id, email: user.email, name: user.username } : null;
 }
 
+/**
+ * Après une connexion réussie : l'email du compte est-il validé ? Relu en base
+ * (le JWT ne porte que l'identifiant). Ne sert qu'à choisir la redirection.
+ */
+export async function isEmailVerified(email: unknown): Promise<boolean> {
+  const parsed = signInSchema.shape.email.safeParse(email);
+  if (!parsed.success) return false;
+  const user = await db.user.findUnique({
+    where: { email: parsed.data },
+    select: { emailVerifiedAt: true },
+  });
+  return Boolean(user?.emailVerifiedAt);
+}
+
 // ─── Validation de l'email ───────────────────────────────────────────────────
 
 export type TokenResult = { ok: true } | { ok: false; reason: Exclude<TokenState, "valid"> };

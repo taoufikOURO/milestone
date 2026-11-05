@@ -34,7 +34,7 @@ yarn-error.log*
 .env
 
 # prisma client généré
-/generated/prisma
+/generated/
 
 # vercel
 .vercel
@@ -42,3 +42,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# tests end-to-end (Playwright)
+/.next-e2e/
+/.e2e/
+/test-results/
+/playwright-report/

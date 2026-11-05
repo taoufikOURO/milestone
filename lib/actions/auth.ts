@@ -4,10 +4,10 @@ import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn, signOut } from "@/auth";
 import { requireUser } from "@/lib/auth/guards";
-import { db } from "@/lib/db";
 import type { EmailFailureReason } from "@/lib/email";
 import { HOME_PATH, safeCallbackPath, SIGN_IN_PATH, VERIFY_EMAIL_PATH } from "@/lib/routes";
 import {
+  isEmailVerified,
   registerUser,
   requestPasswordReset,
   resendVerificationEmail,
@@ -63,12 +63,8 @@ export async function signInAction(_prev: FormState, formData: FormData): Promis
     throw error;
   }
 
-  // La session vient d'être créée : l'état de validation est lu en base.
-  const user = await db.user.findUnique({
-    where: { email: parsed.data.email },
-    select: { emailVerifiedAt: true },
-  });
-  if (!user?.emailVerifiedAt) redirect(VERIFY_EMAIL_PATH);
+  // La session vient d'être créée : l'état de validation est lu en base (service).
+  if (!(await isEmailVerified(parsed.data.email))) redirect(VERIFY_EMAIL_PATH);
   redirect(safeCallbackPath(str(formData, "callbackUrl")) ?? HOME_PATH);
 }
 

@@ -20,6 +20,7 @@ vi.mock("next/headers", () => ({ cookies: async () => ({ getAll: () => [] }) }))
 
 const {
   authenticate,
+  isEmailVerified,
   registerUser,
   requestPasswordReset,
   resendVerificationEmail,
@@ -211,6 +212,15 @@ describe("connexion", () => {
     await expect(authenticate({ email: "ALICE@example.test", password: input.password })).resolves.toMatchObject({ id: user.id });
     await expect(authenticate({ email: input.email, password: "mauvais-mdp" })).resolves.toBeNull();
     await expect(authenticate({ email: "inconnu@example.test", password: input.password })).resolves.toBeNull();
+  });
+
+  it("indique si l'email du compte est validé, sans lever sur un email inconnu ou invalide", async () => {
+    const { user } = await registered();
+    await expect(isEmailVerified("ALICE@example.test")).resolves.toBe(false);
+    await db.user.update({ where: { id: user.id }, data: { emailVerifiedAt: new Date() } });
+    await expect(isEmailVerified("alice@example.test")).resolves.toBe(true);
+    await expect(isEmailVerified("inconnu@example.test")).resolves.toBe(false);
+    await expect(isEmailVerified("pas-un-email")).resolves.toBe(false);
   });
 });
 

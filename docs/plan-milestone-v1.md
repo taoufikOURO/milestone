@@ -17,17 +17,15 @@ Mis à jour le 4 novembre 2026. Les étapes sont validées une par une avant la 
 | 8 | Calendrier de la promotion | Terminée et commitée |
 | 9 | Moteur de planification | Terminée et commitée |
 | 10 | Calendrier de groupe, Mon calendrier, réunions | Terminée et commitée |
-| 11 | Profil | Terminée sans commit (validée par lint, typecheck, tests unitaires et d'intégration) |
-| 12 | Landing page | À faire |
-| 13 | Durcissement et mise en production | À faire |
+| 11 | Profil | Terminée et commitée |
+| 12 | Landing page | Terminée et commitée |
+| 13 | Durcissement et mise en production | Terminée sans commit (lint, typecheck, tests unitaires, d'intégration et e2e, build). Déploiement non effectué : voir docs/deploiement.md |
 
 ## Points en attente
 
 - **Vérification navigateur à 375 px et 1280 px** : le calendrier mensuel (`/mon-calendrier`, `/groupes/[id]/calendrier`) n'a pas été contrôlé dans un navigateur.
 - **Modification du profil à vérifier dans le navigateur** : `/profil` (prénom et nom, changement de mot de passe, session conservée via `signIn`) n'est testée que par les tests automatisés.
 - **Table `meetings` non utilisée en v1** : les réunions sont calculées à la demande et jamais écrites en base. La table existe (§7) mais reste vide.
-- **Limite de durée de 1000 jours** : fixée à l'étape 7 pour tenir dans la colonne, absente du cahier des charges. À valider.
-- **Conflits rattachés au dernier jour de la tâche** : la projection `planning-view.ts` ne donne pas de jour par conflit. Interprétation retenue à l'étape 10 ; les conflits sans tâche planifiée sont listés dans « Conflits sans date ». Un vrai jour par conflit exigerait de l'ajouter à la projection.
 
 ## Écarts acceptés (étapes 9 et 10)
 
