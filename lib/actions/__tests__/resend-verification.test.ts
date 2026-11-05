@@ -32,23 +32,23 @@ describe("resendVerificationAction", () => {
     });
   });
 
-  it("en transport Brevo, confirme l'envoi à l'adresse du compte", async () => {
-    resend.result = { ok: true, transport: "brevo" };
+  it("en transport SMTP, confirme l'envoi à l'adresse du compte", async () => {
+    resend.result = { ok: true, transport: "smtp" };
     expect(await resendVerificationAction()).toEqual({
       message: "Un nouveau lien a été envoyé à alice@example.test.",
     });
   });
 
   it.each([
-    ["unauthorized", /clé API/],
-    ["sender", /expédition n'est pas validée/],
-    ["quota", /quota/],
-  ] as const)("en transport Brevo, renvoie une erreur explicite (%s)", async (reason, expected) => {
+    ["unauthorized", "Le service d'email a refusé les identifiants du serveur. Contactez l'administrateur."],
+    ["quota", "Le quota d'envoi quotidien est atteint. Réessayez demain."],
+    ["unavailable", "Le service d'email est indisponible. Réessayez plus tard."],
+  ] as const)("en transport SMTP, renvoie une erreur explicite (%s)", async (reason, expected) => {
     resend.result = { ok: false, error: "send_failed", reason };
     const state = await resendVerificationAction();
     expect(state.message).toBeUndefined();
-    expect(state.error).toMatch(expected);
-    // Ni statut HTTP, ni code fournisseur, ni adresse dans le message affiché.
-    expect(state.error).not.toMatch(/HTTP|\d{3}|@|unauthorized|credits/i);
+    expect(state.error).toBe(expected);
+    // Ni code SMTP, ni code nodemailer, ni adresse dans le message affiché.
+    expect(state.error).not.toMatch(/\d{3}|@|EAUTH|smtp/i);
   });
 });

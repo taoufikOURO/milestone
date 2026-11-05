@@ -9,6 +9,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Jamais de vrai email pendant les tests : transport console imposé
+    // (process.loadEnvFile n'écrase pas une variable déjà définie).
+    env: { ENVIRONMENT: "test" },
     include: ["**/__tests__/**/*.int.test.ts"],
     exclude: ["node_modules/**", ".next/**", "generated/**"],
     setupFiles: ["./tests/load-env.ts", "./tests/use-test-db.ts"],

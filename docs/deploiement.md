@@ -20,13 +20,30 @@ Règles absolues :
 | `DATABASE_URL` | Connexion **poolée** Supabase (Supavisor, port 6543), utilisée par l'application | Mode transaction. Avec l'adaptateur `@prisma/adapter-pg`, vérifier sur la préproduction qu'aucun paramètre supplémentaire n'est requis |
 | `DIRECT_URL` | Connexion **directe** Supabase (port 5432), utilisée seulement par `prisma migrate deploy` | `prisma.config.ts` la prend en priorité sur `DATABASE_URL` |
 | `AUTH_SECRET` | Secret de signature des JWT Auth.js | Générer avec `npx auth secret`, propre à la production |
-| `BREVO_API_KEY` | Clé de l'API transactionnelle Brevo | Clé dédiée à la production |
-| `MAIL_FROM` | Expéditeur, ex. `Milestone <no-reply@domaine.fr>` | L'adresse doit être validée dans Brevo |
+| `ENVIRONMENT` | `production` | Valeur exacte. Active l'envoi par SMTP ; toute autre valeur (ou absence) garde le transport console, qui n'envoie rien. **Production uniquement** : ne pas la définir pour Preview ni Development |
+| `SMTP_HOST` | `smtp.gmail.com` | |
+| `SMTP_PORT` | `587` | STARTTLS (valeur par défaut si vide). `465` pour du TLS direct |
+| `SMTP_USER` | Adresse Gmail complète du compte d'envoi | |
+| `SMTP_PASSWORD` | Mot de passe d'application Gmail | Validation en deux étapes activée sur le compte, puis Compte Google → Sécurité → Mots de passe des applications. Jamais le mot de passe du compte. À marquer « Sensitive » dans Vercel |
+| `MAIL_FROM` | Expéditeur, ex. `Milestone <adresse@gmail.com>` | Doit utiliser **la même adresse** que `SMTP_USER` (vérifié au démarrage) |
 | `APP_URL` | URL publique, ex. `https://milestone.example.com` | Obligatoire : les liens des emails en dépendent (l'en-tête Host n'est jamais utilisé) |
-| `EMAIL_TRANSPORT` | `brevo` | En production, Brevo est utilisé de toute façon ; la variable rend le choix explicite |
 | `PLANNING_TIMEZONE` | Fuseau qui définit « aujourd'hui » pour la planification | `Africa/Lome` si vide ; une valeur invalide est refusée |
 
 Ne **pas** définir en production : `TEST_DATABASE_URL`, `EMAIL_OUTBOX_FILE`, `NEXT_DIST_DIR`.
+
+**Contrôle au démarrage** : avec `ENVIRONMENT=production`, le serveur (`instrumentation.ts`) vérifie `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` et `MAIL_FROM`. Si une variable manque ou est invalide, il refuse de démarrer et l'erreur, visible dans les logs Vercel, nomme la variable sans jamais afficher de valeur.
+
+### Limite d'envoi Gmail
+
+Un compte Gmail personnel accepte au plus **500 destinataires par jour** (fenêtre glissante de 24 h ; la limite est plus basse pour un compte récent). Au-delà, Gmail répond `550 5.4.5 Daily user sending limit exceeded` et l'application affiche « Le quota d'envoi quotidien est atteint. Réessayez demain. ». Chaque inscription, renvoi de validation et demande de réinitialisation consomme un destinataire : prévoir large pour une rentrée (toute une promo qui s'inscrit le même jour), ou passer à Google Workspace / un service transactionnel si l'usage augmente.
+
+Messages affichés en cas d'échec (jamais d'identifiant ni de mot de passe, dans l'interface comme dans les logs) :
+
+| Cause | Message |
+|---|---|
+| Identifiants refusés (`EAUTH`, 535) | Le service d'email a refusé les identifiants du serveur. Contactez l'administrateur. |
+| Quota quotidien (550 5.4.5) | Le quota d'envoi quotidien est atteint. Réessayez demain. |
+| Serveur injoignable, délai dépassé | Le service d'email est indisponible. Réessayez plus tard. |
 
 ## 2. Build sur Vercel
 
@@ -100,7 +117,7 @@ Les tests automatisés (`test:integration`, `test:e2e`) ne touchent jamais la pr
 
 ## 6. Après le déploiement
 
-- Inscription d'un compte réel : l'email de validation arrive via Brevo, le lien pointe vers `APP_URL`.
+- Inscription d'un compte réel : l'email de validation arrive depuis l'adresse Gmail de `MAIL_FROM` (vérifier aussi le dossier spam), le lien pointe vers `APP_URL`.
 - Mot de passe oublié : même vérification.
 - Contrôle visuel à 375 px et 1280 px (calendriers, profil), resté en attente depuis les étapes 10 et 11.
 - Supprimer ce compte de vérification s'il ne doit pas rester (section 5).

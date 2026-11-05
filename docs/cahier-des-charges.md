@@ -24,7 +24,7 @@ L'application ne planifie pas par groupe, mais **par étudiant, sur toute la pro
   - **Production** : Supabase (PostgreSQL). `DATABASE_URL` (connexion poolée) et `DIRECT_URL` (connexion directe, utilisée pour les migrations) dans les variables d'environnement de l'hébergeur.
   - Les migrations se lancent avec `prisma migrate dev` en local et `prisma migrate deploy` en production.
   - Le fichier `.env` n'est jamais versionné. Un fichier `.env.example`, sans secrets, l'est.
-- **Envoi d'emails** : Brevo (API transactionnelle, clé `BREVO_API_KEY`), pour l'email de validation et de réinitialisation du mot de passe.
+- **Envoi d'emails** : Gmail SMTP (nodemailer, variables `SMTP_*` et `MAIL_FROM`), activé par `ENVIRONMENT=production`, pour l'email de validation et de réinitialisation du mot de passe. Console en développement et pendant les tests (voir décision 18).
 - **Validation des données** : Zod, côté serveur, pour les formulaires et les actions.
 - **Hébergement** : Vercel pour l'application, Supabase pour la base.
 - **RLS** : activée sur toutes les tables, sans policy (refus par défaut via l'API Supabase).
@@ -275,7 +275,7 @@ Style inspiré d'une vidéo de référence :
 4. **Changement de deadline** : la planification est recalculée à la demande, donc tout de suite. Pas de notification en v1.
 5. **Invitation** : par nom d'utilisateur uniquement.
 6. **Hébergement** : Vercel + Supabase.
-7. **Envoi d'emails** : Brevo.
+7. **Envoi d'emails** : Brevo. *Remplacée par la décision 18 (5 novembre 2026).*
 8. **Auth.js** : retenu à la place de Supabase Auth. Le mot de passe et la validation d'email sont gérés par l'application.
 9. **Deadline d'une tâche** : la date de fin du groupe. Deadlines « similaires » = même date.
 10. **Suppression de la promo** : confirmation, puis les membres quittent la promo et les groupes sont supprimés.
@@ -286,6 +286,10 @@ Style inspiré d'une vidéo de référence :
 15. **Vue personnelle** (§5.3) : incluse en v1.
 16. **Durée d'une tâche** : entre 1 et 1000 jours (borne technique, bien au-delà de la durée d'un projet).
 17. **Conflits dans les calendriers** : rattachés au dernier jour de la tâche planifiée ; sans tâche planifiée, listés dans « Conflits sans date ».
+
+### Décision du 5 novembre 2026
+
+18. **Envoi d'emails : Gmail SMTP à la place de Brevo** (remplace la décision 7). L'envoi passe par SMTP (`smtp.gmail.com`, port 587 en STARTTLS, mot de passe d'application) avec nodemailer. Le transport est choisi par `ENVIRONMENT` : SMTP si la valeur est exactement `production`, console sinon ; les tests imposent toujours la console. `MAIL_FROM` utilise la même adresse que `SMTP_USER`. Le transport Brevo et les variables `BREVO_API_KEY` et `EMAIL_TRANSPORT` sont supprimés. Conséquence : limite Gmail de 500 destinataires par jour ; au-delà, l'utilisateur voit « Le quota d'envoi quotidien est atteint. Réessayez demain. ».
 
 ---
 

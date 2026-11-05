@@ -48,7 +48,8 @@ export default defineConfig({
       NEXT_DIST_DIR: ".next-e2e",
       APP_URL: E2E_BASE_URL,
       AUTH_URL: E2E_BASE_URL,
-      EMAIL_TRANSPORT: "console",
+      // Jamais de vrai email : ENVIRONMENT=test (≠ production) impose le transport console.
+      ENVIRONMENT: "test",
       EMAIL_OUTBOX_FILE: OUTBOX_FILE,
     },
   },

@@ -14,7 +14,7 @@ Application de planification des projets de groupe pour une promotion.
 - Base : PostgreSQL local en dev, Supabase (PostgreSQL uniquement) en production. Supabase Auth n'est pas utilisé.
 - RLS activée sur toutes les tables, sans policy (refus par défaut via l'API Supabase). Prisma contourne la RLS : les droits sont appliqués dans les services serveur.
 - Validation : Zod côté serveur
-- Emails : Brevo (API transactionnelle), clé dans `BREVO_API_KEY`
+- Emails : Gmail SMTP (nodemailer) si `ENVIRONMENT=production`, console sinon et toujours pendant les tests. Variables `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`
 
 ## Palette
 

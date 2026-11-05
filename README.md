@@ -93,7 +93,7 @@ Le détail complet est dans [docs/cahier-des-charges.md](docs/cahier-des-charges
 | Auth.js (`next-auth`) | 5.0.0-beta.32 | Connexion email et mot de passe, sessions JWT. |
 | `@node-rs/argon2` | 2.2.2 | Hachage des mots de passe (argon2id). |
 | Zod | ^4.6.7 | Validation des entrées côté serveur. |
-| Brevo | — | Envoi des emails transactionnels via son API HTTP (pas de SDK). |
+| Nodemailer | ^10.3.1 | Envoi des emails par SMTP (Gmail en production). |
 | Vitest | ^5.1.0 | Tests unitaires et d'intégration. |
 | Playwright | ^1.64.1 | Tests end-to-end dans un vrai navigateur. |
 | motion | ^14.9.0 | Animations de l'interface. |
@@ -114,7 +114,7 @@ Gestionnaire de paquets : pnpm 12.6.0 (champ `packageManager`).
 | `lib/domain/` | Fonctions pures, sans base de données : détection de cycles, avancement, frise, grille mensuelle. |
 | `lib/planning/` | Moteur de planification : fonctions pures et déterministes (CPM, priorité, placement, conflits, réunions). L'horloge n'y est jamais lue : « aujourd'hui » est fourni par l'appelant. |
 | `lib/auth/` | Mots de passe, tokens, limite de fréquence des emails, sessions, gardes d'accès (`requireUser`, `requireVerifiedUser`). |
-| `lib/email/` | Transports d'email : console (développement) et Brevo, gabarits. |
+| `lib/email/` | Transports d'email : console (développement, tests) et SMTP (production), gabarits, messages d'erreur. |
 | `prisma/` | `schema.prisma`, migrations versionnées, seed (volontairement vide). |
 | `generated/prisma/` | Client Prisma généré (non versionné). |
 | `tests/`, `scripts/` | Aides pour les tests d'intégration (base de test) et script de migration de la base de test. |
@@ -144,7 +144,7 @@ Règles d'architecture :
 6. Appliquer les migrations sur la base de test : `pnpm db:test:migrate`.
 7. Lancer l'application : `pnpm dev` (http://localhost:3000).
 
-**Emails en développement** : sans configuration, le transport est « console » : les emails (liens de validation, de réinitialisation) sont écrits dans la console du serveur `pnpm dev`, aucun mail n'est envoyé. `EMAIL_TRANSPORT=brevo` permet d'utiliser Brevo en local (il faut alors `BREVO_API_KEY` et `MAIL_FROM`).
+**Emails en développement** : tant que `ENVIRONMENT` ne vaut pas exactement `production`, le transport est « console » : les emails (liens de validation, de réinitialisation) sont écrits dans la console du serveur `pnpm dev`, aucun mail n'est envoyé. Avec `ENVIRONMENT=production`, l'envoi passe par SMTP (Gmail) et demande `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` et `MAIL_FROM`. Les tests (unitaires, intégration, e2e) imposent toujours la console.
 
 ## 8. Scripts
 
@@ -183,11 +183,13 @@ La procédure complète (Vercel, Supabase, migrations, vérification de la RLS) 
 - `DATABASE_URL`
 - `DIRECT_URL`
 - `AUTH_SECRET`
-- `BREVO_API_KEY`
-- `MAIL_FROM`
+- `ENVIRONMENT` (`production`)
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`
+- `MAIL_FROM` (même adresse que `SMTP_USER`)
 - `APP_URL`
-- `EMAIL_TRANSPORT`
 - `PLANNING_TIMEZONE`
+
+Gmail limite l'envoi à 500 destinataires par jour (voir docs/deploiement.md).
 
 `TEST_DATABASE_URL` est réservée au développement et aux tests : ne pas la définir en production.
 
@@ -200,6 +202,8 @@ La procédure complète (Vercel, Supabase, migrations, vérification de la RLS) 
 - **Messages d'erreur neutres** là où une réponse précise aiderait à deviner des informations (identifiants de connexion, code de promo, groupe d'autrui).
 - Limite de fréquence sur l'envoi des emails, validation des entrées avec Zod, liens d'email construits à partir de `APP_URL`.
 - Les secrets ne sont ni dans le code ni dans Git.
+- Emails envoyés par SMTP (Gmail) en STARTTLS obligatoire. Le mot de passe d'application (`SMTP_PASSWORD`) n'est défini que dans les variables de l'hébergeur ; il n'apparaît jamais dans les messages d'erreur ni dans les logs (seuls les codes d'erreur SMTP sont journalisés, la journalisation de nodemailer est coupée).
+- Les tests n'envoient jamais de vrai email : ils imposent le transport console.
 
 ## 12. Limites connues de la v1
 
