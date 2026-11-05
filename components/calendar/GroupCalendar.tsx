@@ -1,5 +1,6 @@
+import { CalendarDays, Flag } from "lucide-react";
 import { MonthCalendar } from "@/components/calendar/MonthCalendar";
-import { Card } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/ui/Card";
 import { formatDay } from "@/lib/format";
 import type { GroupCalendarView } from "@/lib/services/planning-view";
 
@@ -9,12 +10,17 @@ export function GroupCalendar({ view }: { view: GroupCalendarView }) {
   return (
     <div className="space-y-6">
       <Card className="space-y-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-lg font-bold text-text-primary">Planning</h2>
-          <p className="text-sm text-text-secondary">
-            Deadline : <span className="font-semibold text-text-primary">{formatDay(view.group.endDay)}</span>
-          </p>
-        </div>
+        <CardTitle
+          icon={CalendarDays}
+          aside={
+            <p className="flex items-center gap-1.5 text-sm text-text-secondary">
+              <Flag aria-hidden className="size-4 text-accent" />
+              Deadline : <span className="font-semibold text-text-primary">{formatDay(view.group.endDay)}</span>
+            </p>
+          }
+        >
+          Planning
+        </CardTitle>
         <MonthCalendar view={view} showGroup={false} />
       </Card>
     </div>

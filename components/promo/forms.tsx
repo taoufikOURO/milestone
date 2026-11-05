@@ -1,10 +1,12 @@
 "use client";
 
+import { UserRound } from "lucide-react";
 import { useActionState, useRef, useState, type ReactNode } from "react";
-import { Alert } from "@/components/auth/ui";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Input } from "@/components/ui/Input";
+import { Select as UiSelect } from "@/components/ui/Select";
 import {
   createPromoAction,
   deletePromoAction,
@@ -42,27 +44,16 @@ export function Select({
   placeholder: string;
 }) {
   return (
-    <div>
-      <label htmlFor={name} className="block text-sm font-medium text-text-primary">
-        {label}
-      </label>
-      <select
-        id={name}
-        name={name}
-        required
-        defaultValue=""
-        className="mt-1 block w-full rounded-lg border border-border-soft bg-background px-3 py-2 text-text-primary outline-none focus:ring-2 focus:ring-accent/40"
-      >
-        <option value="" disabled>
-          {placeholder}
+    <UiSelect label={label} name={name} required defaultValue="">
+      <option value="" disabled>
+        {placeholder}
+      </option>
+      {options.map((p) => (
+        <option key={p.id} value={p.id}>
+          {personLabel(p)}
         </option>
-        {options.map((p) => (
-          <option key={p.id} value={p.id}>
-            {personLabel(p)}
-          </option>
-        ))}
-      </select>
-    </div>
+      ))}
+    </UiSelect>
   );
 }
 
@@ -178,9 +169,9 @@ export function LeavePromoForm({
 
   if (isDelegate && delegateCandidates.length === 0) {
     return (
-      <p className="text-sm text-text-secondary">
+      <Alert tone="info" icon={UserRound}>
         Vous êtes le seul membre de la promo. Pour la quitter, supprimez-la depuis la page de gestion.
-      </p>
+      </Alert>
     );
   }
 
@@ -237,7 +228,11 @@ export function LeavePromoForm({
 export function TransferDelegationForm({ promoId, candidates }: { promoId: string; candidates: Person[] }) {
   const [state, action, pending] = useActionState(transferDelegationAction, initial);
   if (candidates.length === 0) {
-    return <p className="text-sm text-text-secondary">Aucun autre membre pour l&apos;instant.</p>;
+    return (
+      <Alert tone="info" icon={UserRound}>
+        Aucun autre membre pour l&apos;instant.
+      </Alert>
+    );
   }
   return (
     <ConfirmedForm

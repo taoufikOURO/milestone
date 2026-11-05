@@ -1,6 +1,10 @@
+import { ArrowRight, CalendarDays, FolderKanban, Plus } from "lucide-react";
 import Link from "next/link";
 import { MonthCalendar } from "@/components/calendar/MonthCalendar";
-import { Card } from "@/components/ui/Card";
+import { StaggerItem, StaggerList } from "@/components/motion/Stagger";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { Card, CardTitle } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDay } from "@/lib/format";
 import type { CalendarView } from "@/lib/services/planning-view";
 
@@ -11,12 +15,17 @@ export function PersonalCalendar({ view }: { view: CalendarView }) {
   if (view.groups.length === 0) {
     return (
       <Card>
-        <p className="text-sm text-text-secondary">
-          Vous n&apos;êtes dans aucun groupe.{" "}
-          <Link href="/groupes/creer" className="font-semibold text-accent hover:underline">
-            Créer un groupe
-          </Link>
-        </p>
+        <EmptyState
+          icon={FolderKanban}
+          actions={
+            <ButtonLink href="/groupes/creer">
+              <Plus aria-hidden />
+              Créer un groupe
+            </ButtonLink>
+          }
+        >
+          Vous n&apos;êtes dans aucun groupe.
+        </EmptyState>
       </Card>
     );
   }
@@ -24,25 +33,29 @@ export function PersonalCalendar({ view }: { view: CalendarView }) {
   return (
     <div className="space-y-6">
       <Card className="space-y-4">
-        <h2 className="text-lg font-bold text-text-primary">Mes tâches</h2>
+        <CardTitle icon={CalendarDays}>Mes tâches</CardTitle>
         <MonthCalendar view={view} showGroup />
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-bold text-text-primary">Mes groupes</h2>
-        <ul className="divide-y divide-border-soft">
+        <CardTitle icon={FolderKanban}>Mes groupes</CardTitle>
+        <StaggerList className="divide-y divide-line">
           {view.groups.map((g) => (
-            <li key={g.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2 text-sm">
+            <StaggerItem key={g.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2.5 text-sm">
               <Link
                 href={`/groupes/${g.id}/calendrier`}
-                className="min-w-0 break-words font-medium text-text-primary hover:underline"
+                className="group inline-flex min-w-0 items-center gap-1.5 break-words font-semibold text-text-primary hover:text-accent-strong focus-visible:outline-2 focus-visible:outline-accent"
               >
                 {g.name}
+                <ArrowRight
+                  aria-hidden
+                  className="size-3.5 shrink-0 text-muted transition-transform duration-(--duration-fast) group-hover:translate-x-0.5 group-hover:text-accent"
+                />
               </Link>
               <span className="text-text-secondary">Deadline : {formatDay(g.endDay)}</span>
-            </li>
+            </StaggerItem>
           ))}
-        </ul>
+        </StaggerList>
       </Card>
     </div>
   );

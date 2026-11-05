@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert, Field, SubmitButton } from "@/components/auth/ui";
+import { Field, SubmitButton } from "@/components/auth/ui";
+import { Alert } from "@/components/ui/Alert";
 import type { FormState } from "@/lib/actions/auth";
 import { changePasswordAction, updateProfileAction } from "@/lib/actions/profile";
 import { PASSWORD_MIN } from "@/lib/validation/auth";
@@ -19,7 +20,7 @@ export function ProfileForm({ firstName, lastName }: { firstName: string; lastNa
         <Field label="Nom" name="lastName" autoComplete="family-name" defaultValue={v.lastName} error={e.lastName} />
       </div>
       {state.error ? <Alert tone="error">{state.error}</Alert> : null}
-      {state.message ? <Alert tone="info">{state.message}</Alert> : null}
+      {state.message ? <Alert tone="success">{state.message}</Alert> : null}
       <SubmitButton pending={pending}>Enregistrer</SubmitButton>
     </form>
   );
@@ -33,7 +34,7 @@ export function ChangePasswordForm() {
       <Field label="Mot de passe actuel" name="currentPassword" type="password" autoComplete="current-password" error={e.currentPassword} />
       <Field label="Nouveau mot de passe" name="newPassword" type="password" autoComplete="new-password" error={e.newPassword} hint={`${PASSWORD_MIN} caractères minimum, différent de l'actuel.`} />
       {state.error ? <Alert tone="error">{state.error}</Alert> : null}
-      {state.message ? <Alert tone="info">{state.message}</Alert> : null}
+      {state.message ? <Alert tone="success">{state.message}</Alert> : null}
       <SubmitButton pending={pending}>Changer le mot de passe</SubmitButton>
     </form>
   );

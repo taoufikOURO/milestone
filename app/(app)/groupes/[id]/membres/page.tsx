@@ -1,9 +1,14 @@
+import { LogOut, MailPlus, UserPlus, UsersRound } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CancelInvitationForm, InviteForm, LeaveGroupForm } from "@/components/group/forms";
+import { StaggerItem, StaggerList } from "@/components/motion/Stagger";
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PersonRow } from "@/components/ui/PersonRow";
+import { CardSkeleton } from "@/components/ui/Skeleton";
 import { requireVerifiedUser } from "@/lib/auth/guards";
 import { formatDate } from "@/lib/format";
 import { getGroupForMember } from "@/lib/services/group";
@@ -12,7 +17,7 @@ export const metadata: Metadata = { title: "Membres du groupe · Milestone" };
 
 export default function GroupMembersPage({ params }: PageProps<"/groupes/[id]/membres">) {
   return (
-    <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-border-soft/60" />}>
+    <Suspense fallback={<CardSkeleton />}>
       {params.then(({ id }) => (
         <MembersContent groupId={id} />
       ))}
@@ -31,29 +36,32 @@ async function MembersContent({ groupId }: { groupId: string }) {
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h2 className="text-lg font-bold text-text-primary">
+          <CardTitle icon={UsersRound}>
             Membres <span className="text-text-secondary">({group.members.length})</span>
-          </h2>
-          <ul className="mt-3 divide-y divide-border-soft">
+          </CardTitle>
+          <StaggerList className="mt-3 divide-y divide-line">
             {group.members.map((m) => (
-              <li key={m.id} className="flex items-center justify-between gap-2 py-2">
-                <span className="min-w-0 truncate text-text-primary">
-                  {m.firstName} {m.lastName} <span className="text-sm text-text-secondary">@{m.username}</span>
-                </span>
-                {m.role === "leader" ? <Badge tone="accent">Chef</Badge> : null}
-              </li>
+              <PersonRow
+                key={m.id}
+                firstName={m.firstName}
+                lastName={m.lastName}
+                username={m.username}
+                badge={m.role === "leader" ? <Badge tone="accent">Chef</Badge> : null}
+              />
             ))}
-          </ul>
+          </StaggerList>
         </Card>
 
         <Card className="space-y-4">
-          <h2 className="text-lg font-bold text-text-primary">Invitations en attente</h2>
+          <CardTitle icon={MailPlus}>Invitations en attente</CardTitle>
           {group.pendingInvitations.length === 0 ? (
-            <p className="text-sm text-text-secondary">Aucune invitation en attente.</p>
+            <EmptyState icon={MailPlus} compact>
+              Aucune invitation en attente.
+            </EmptyState>
           ) : (
-            <ul className="divide-y divide-border-soft">
+            <StaggerList className="divide-y divide-line">
               {group.pendingInvitations.map((i) => (
-                <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                <StaggerItem key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                   <div className="min-w-0">
                     <p className="truncate text-text-primary">
                       {i.user.firstName} {i.user.lastName}{" "}
@@ -64,13 +72,15 @@ async function MembersContent({ groupId }: { groupId: string }) {
                   {isLeader ? (
                     <CancelInvitationForm invitationId={i.id} label={`${i.user.firstName} ${i.user.lastName}`} />
                   ) : null}
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </StaggerList>
           )}
           {isLeader ? (
-            <div className="border-t border-border-soft pt-4">
-              <h3 className="mb-3 font-semibold text-text-primary">Inviter un étudiant</h3>
+            <div className="space-y-3 border-t border-line pt-4">
+              <CardTitle icon={UserPlus} level={3}>
+                Inviter un étudiant
+              </CardTitle>
               <InviteForm groupId={group.id} />
             </div>
           ) : null}
@@ -78,7 +88,7 @@ async function MembersContent({ groupId }: { groupId: string }) {
       </div>
 
       <Card tone="muted" className="space-y-3">
-        <h2 className="text-lg font-bold text-text-primary">Quitter le groupe</h2>
+        <CardTitle icon={LogOut}>Quitter le groupe</CardTitle>
         <LeaveGroupForm groupId={group.id} groupName={group.name} isLeader={isLeader} candidates={others} />
       </Card>
     </div>

@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { LogOut } from "lucide-react";
 import { Suspense } from "react";
 import { ResendVerificationForm } from "@/components/auth/forms";
 import { AuthShell } from "@/components/auth/ui";
+import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { signOutAction } from "@/lib/actions/auth";
 import { requireUser } from "@/lib/auth/guards";
 import { HOME_PATH } from "@/lib/routes";
@@ -12,7 +15,7 @@ export const metadata: Metadata = { title: "Validez votre email · Milestone" };
 export default function VerifierEmailPage() {
   return (
     <AuthShell title="Validez votre adresse email">
-      <Suspense fallback={<p className="text-sm text-text-secondary">Chargement…</p>}>
+      <Suspense fallback={<Skeleton className="h-24" />}>
         <VerifyContent />
       </Suspense>
     </AuthShell>
@@ -32,9 +35,10 @@ async function VerifyContent() {
       </p>
       <ResendVerificationForm />
       <form action={signOutAction}>
-        <button type="submit" className="w-full text-sm text-text-secondary underline">
+        <Button type="submit" variant="ghost" fullWidth>
+          <LogOut aria-hidden />
           Se déconnecter
-        </button>
+        </Button>
       </form>
     </div>
   );

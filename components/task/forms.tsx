@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { Alert } from "@/components/auth/ui";
 import { ConfirmedForm } from "@/components/promo/forms";
 import { TASK_STATUS_LABELS } from "@/components/task/status";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
@@ -31,7 +31,7 @@ const taskOption = (t: TaskRef): Option => ({ id: t.id, label: t.title });
 
 function Feedback({ state }: { state: TaskFormState }) {
   if (state.error) return <Alert tone="error">{state.error}</Alert>;
-  if (state.success) return <Alert tone="info">{state.success}</Alert>;
+  if (state.success) return <Alert tone="success">{state.success}</Alert>;
   return null;
 }
 
@@ -50,20 +50,20 @@ function CheckboxList({
 }) {
   return (
     <fieldset>
-      <legend className="text-sm font-medium text-text-primary">{legend}</legend>
+      <legend className="text-sm font-semibold text-text-primary">{legend}</legend>
       {options.length === 0 ? (
-        <p className="mt-1 text-sm text-text-secondary">{emptyText}</p>
+        <p className="mt-1.5 text-sm text-text-secondary">{emptyText}</p>
       ) : (
-        <ul className="mt-1 max-h-56 space-y-1 overflow-y-auto rounded-lg border border-border-soft p-2">
+        <ul className="mt-1.5 max-h-56 space-y-0.5 overflow-y-auto rounded-control border border-border-soft bg-surface-raised p-1.5 shadow-hairline">
           {options.map((o) => (
             <li key={o.id}>
-              <label className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm text-text-primary hover:bg-border-soft/30">
+              <label className="flex cursor-pointer items-center gap-2.5 rounded-control px-2 py-1.5 text-sm text-text-primary transition-colors duration-(--duration-fast) hover:bg-surface">
                 <input
                   type="checkbox"
                   name={name}
                   value={o.id}
                   defaultChecked={selected.includes(o.id)}
-                  className="h-4 w-4 accent-accent"
+                  className="size-4 shrink-0 accent-accent"
                 />
                 <span className="min-w-0 break-words">{o.label}</span>
               </label>

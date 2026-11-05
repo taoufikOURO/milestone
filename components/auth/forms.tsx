@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import {
   forgotPasswordAction,
@@ -11,8 +10,11 @@ import {
   verifyEmailAction,
   type FormState,
 } from "@/lib/actions/auth";
+import { Alert } from "@/components/ui/Alert";
+import { ButtonLink } from "@/components/ui/ButtonLink";
+import { TextLink } from "@/components/ui/TextLink";
 import { PASSWORD_MIN } from "@/lib/validation/auth";
-import { Alert, Field, SubmitButton } from "./ui";
+import { Field, SubmitButton } from "./ui";
 
 const initial: FormState = {};
 
@@ -45,9 +47,9 @@ export function SignInForm({ callbackUrl }: { callbackUrl?: string }) {
       {state.error ? <Alert tone="error">{state.error}</Alert> : null}
       <SubmitButton pending={pending}>Se connecter</SubmitButton>
       <p className="text-right text-sm">
-        <Link href="/mot-de-passe-oublie" className="text-text-secondary underline">
+        <TextLink href="/mot-de-passe-oublie" className="font-medium text-text-secondary">
           Mot de passe oublié ?
-        </Link>
+        </TextLink>
       </p>
     </form>
   );
@@ -57,7 +59,7 @@ export function ResendVerificationForm() {
   const [state, action, pending] = useActionState(resendVerificationAction, initial);
   return (
     <form action={action} className="space-y-4">
-      {state.message ? <Alert tone="info">{state.message}</Alert> : null}
+      {state.message ? <Alert tone="success">{state.message}</Alert> : null}
       {state.error ? <Alert tone="error">{state.error}</Alert> : null}
       <SubmitButton pending={pending}>Renvoyer le mail</SubmitButton>
     </form>
@@ -69,10 +71,10 @@ export function VerifyEmailForm({ token }: { token: string }) {
   if (state.message) {
     return (
       <div className="space-y-4">
-        <Alert tone="info">{state.message}</Alert>
-        <Link href="/verifier-email" className="block w-full rounded-lg bg-accent px-4 py-2.5 text-center font-semibold text-background">
+        <Alert tone="success">{state.message}</Alert>
+        <ButtonLink href="/verifier-email" className="w-full">
           Continuer
-        </Link>
+        </ButtonLink>
       </div>
     );
   }
@@ -87,7 +89,7 @@ export function VerifyEmailForm({ token }: { token: string }) {
 
 export function ForgotPasswordForm() {
   const [state, action, pending] = useActionState(forgotPasswordAction, initial);
-  if (state.message) return <Alert tone="info">{state.message}</Alert>;
+  if (state.message) return <Alert tone="success">{state.message}</Alert>;
   return (
     <form action={action} className="space-y-4" noValidate>
       <Field label="Email" name="email" type="email" autoComplete="email" defaultValue={state.values?.email} error={state.errors?.email} />
@@ -107,9 +109,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       {state.error ? (
         <Alert tone="error">
           {state.error}{" "}
-          <Link href="/mot-de-passe-oublie" className="underline">
-            Nouveau lien
-          </Link>
+          <TextLink href="/mot-de-passe-oublie">Nouveau lien</TextLink>
         </Alert>
       ) : null}
       <SubmitButton pending={pending}>Changer le mot de passe</SubmitButton>

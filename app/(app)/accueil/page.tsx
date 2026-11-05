@@ -1,10 +1,15 @@
+import { ArrowRight, CalendarRange, FolderKanban, House, Inbox, Plus, UsersRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { InvitationResponseForm } from "@/components/group/forms";
+import { StaggerItem, StaggerList } from "@/components/motion/Stagger";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { Card } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { CardSkeleton } from "@/components/ui/Skeleton";
 import { requireVerifiedUser } from "@/lib/auth/guards";
 import { formatDate } from "@/lib/format";
 import { listMyGroups } from "@/lib/services/group";
@@ -16,9 +21,9 @@ export const metadata: Metadata = { title: "Accueil · Milestone" };
 export default function AccueilPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">Accueil</h1>
+      <PageHeader title="Accueil" icon={House} />
       {/* Lecture de la session et de la base sous <Suspense> (navigation instantanée). */}
-      <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-border-soft/60" />}>
+      <Suspense fallback={<CardSkeleton />}>
         <AccueilContent />
       </Suspense>
     </div>
@@ -31,14 +36,20 @@ async function AccueilContent() {
 
   if (!promoId) {
     return (
-      <Card className="space-y-4">
-        <p className="text-text-secondary">Vous n&apos;êtes dans aucune promo.</p>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <ButtonLink href="/promo/rejoindre">Rejoindre une promo</ButtonLink>
-          <ButtonLink href="/promo/creer" variant="ghost">
-            Créer une promo
-          </ButtonLink>
-        </div>
+      <Card>
+        <EmptyState
+          icon={UsersRound}
+          actions={
+            <>
+              <ButtonLink href="/promo/rejoindre">Rejoindre une promo</ButtonLink>
+              <ButtonLink href="/promo/creer" variant="ghost">
+                Créer une promo
+              </ButtonLink>
+            </>
+          }
+        >
+          Vous n&apos;êtes dans aucune promo.
+        </EmptyState>
       </Card>
     );
   }
@@ -48,55 +59,70 @@ async function AccueilContent() {
   return (
     <div className="space-y-6">
       {invitations.length > 0 ? (
-        <Card className="space-y-3 border-accent/50">
-          <h2 className="text-lg font-bold text-text-primary">
-            Invitations en attente <Badge tone="accent">{invitations.length}</Badge>
-          </h2>
-          <ul className="divide-y divide-border-soft">
+        <Card className="space-y-3 border-accent/40">
+          <CardTitle icon={Inbox} aside={<Badge tone="accent">{invitations.length}</Badge>}>
+            Invitations en attente
+          </CardTitle>
+          <StaggerList className="divide-y divide-line">
             {invitations.map((i) => (
-              <li key={i.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <StaggerItem key={i.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-text-primary">{i.group.name}</p>
-                  <p className="text-xs text-text-secondary">
-                    {formatDate(i.group.startDate)} → {formatDate(i.group.endDate)}
+                  <p className="truncate font-semibold text-text-primary">{i.group.name}</p>
+                  <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-text-secondary">
+                    <CalendarRange aria-hidden className="size-3.5" />
+                    {formatDate(i.group.startDate)} <ArrowRight aria-hidden className="size-3" />{" "}
+                    {formatDate(i.group.endDate)}
                     {i.leader ? ` · invité par ${i.leader.firstName} ${i.leader.lastName}` : null}
                   </p>
                 </div>
                 <InvitationResponseForm invitationId={i.id} />
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </StaggerList>
         </Card>
       ) : null}
 
       <Card className="space-y-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-lg font-bold text-text-primary">
-            Mes groupes <span className="text-text-secondary">({groups.length})</span>
-          </h2>
-          <ButtonLink href="/groupes/creer">Créer un groupe</ButtonLink>
-        </div>
+        <CardTitle
+          icon={FolderKanban}
+          aside={
+            <ButtonLink href="/groupes/creer">
+              <Plus aria-hidden />
+              Créer un groupe
+            </ButtonLink>
+          }
+        >
+          Mes groupes <span className="text-text-secondary">({groups.length})</span>
+        </CardTitle>
         {groups.length === 0 ? (
-          <p className="text-sm text-text-secondary">Vous n&apos;êtes membre d&apos;aucun groupe pour l&apos;instant.</p>
+          <EmptyState icon={FolderKanban} compact>
+            Vous n&apos;êtes membre d&apos;aucun groupe pour l&apos;instant.
+          </EmptyState>
         ) : (
-          <ul className="divide-y divide-border-soft">
+          <StaggerList className="divide-y divide-line">
             {groups.map((g) => (
-              <li key={g.id}>
+              <StaggerItem key={g.id}>
                 <Link
                   href={`/groupes/${g.id}`}
-                  className="flex items-center justify-between gap-2 rounded-lg py-2 hover:bg-border-soft/30"
+                  className="group -mx-2 flex items-center justify-between gap-3 rounded-control px-2 py-3 transition-colors duration-(--duration-fast) hover:bg-surface focus-visible:outline-2 focus-visible:outline-accent"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-text-primary">{g.name}</p>
+                    <p className="truncate font-semibold text-text-primary">{g.name}</p>
                     <p className="text-xs text-text-secondary">
                       Deadline {formatDate(g.endDate)} · {g.memberCount} membre{g.memberCount > 1 ? "s" : ""}
                     </p>
                   </div>
-                  {g.myRole === "leader" ? <Badge tone="accent">Chef</Badge> : null}
+                  <span className="flex shrink-0 items-center gap-2">
+                    {g.myRole === "leader" ? <Badge tone="accent">Chef</Badge> : null}
+                    <ArrowRight
+                      aria-hidden
+                      className="size-4 text-muted transition-transform duration-(--duration-fast) group-hover:translate-x-0.5 group-hover:text-accent"
+                    />
+                  </span>
                 </Link>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </StaggerList>
         )}
       </Card>
     </div>

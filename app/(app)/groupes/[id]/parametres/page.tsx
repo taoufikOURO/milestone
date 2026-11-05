@@ -1,8 +1,10 @@
+import { ArrowRightLeft, Settings, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { DeleteGroupForm, TransferLeadershipForm, UpdateGroupForm } from "@/components/group/forms";
-import { Card } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/ui/Card";
+import { CardSkeleton } from "@/components/ui/Skeleton";
 import { requireVerifiedUser } from "@/lib/auth/guards";
 import { getGroupForMember } from "@/lib/services/group";
 
@@ -10,7 +12,7 @@ export const metadata: Metadata = { title: "Paramètres du groupe · Milestone" 
 
 export default function GroupSettingsPage({ params }: PageProps<"/groupes/[id]/parametres">) {
   return (
-    <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-border-soft/60" />}>
+    <Suspense fallback={<CardSkeleton />}>
       {params.then(({ id }) => (
         <SettingsContent groupId={id} />
       ))}
@@ -29,18 +31,18 @@ async function SettingsContent({ groupId }: { groupId: string }) {
   return (
     <div className="max-w-2xl space-y-6">
       <Card className="space-y-3">
-        <h2 className="text-lg font-bold text-text-primary">Informations</h2>
+        <CardTitle icon={Settings}>Informations</CardTitle>
         <UpdateGroupForm group={group} />
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-bold text-text-primary">Nommer un successeur</h2>
+        <CardTitle icon={ArrowRightLeft}>Nommer un successeur</CardTitle>
         <p className="text-sm text-text-secondary">Le membre choisi devient chef du groupe à votre place.</p>
         <TransferLeadershipForm groupId={group.id} candidates={others} />
       </Card>
 
       <Card tone="muted" className="space-y-3">
-        <h2 className="text-lg font-bold text-text-primary">Supprimer le groupe</h2>
+        <CardTitle icon={Trash2}>Supprimer le groupe</CardTitle>
         <p className="text-sm text-text-secondary">
           Le groupe et toutes ses données sont supprimés pour tous les membres.
         </p>

@@ -1,9 +1,13 @@
 "use client";
 
+import { CalendarX2, ChevronLeft, ChevronRight, MousePointerClick, TriangleAlert, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { personName } from "@/components/calendar/parts";
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   daysInMonth,
   firstDayOfMonth,
@@ -92,28 +96,28 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-base font-bold capitalize text-text-primary" aria-live="polite">
+        <h3 className="font-display text-xl font-bold capitalize tracking-tight text-text-primary" aria-live="polite">
           {monthLabel(ym)}
         </h3>
         <div className="flex gap-2">
           <NavButton onClick={() => goto(shiftMonth(ym, -1))} label="Mois précédent">
-            ←
+            <ChevronLeft aria-hidden />
           </NavButton>
           <NavButton onClick={() => goto(monthOfDay(view.today))} label="Revenir à aujourd'hui" disabled={todayInMonth && selected === null}>
             Aujourd&apos;hui
           </NavButton>
           <NavButton onClick={() => goto(shiftMonth(ym, 1))} label="Mois suivant">
-            →
+            <ChevronRight aria-hidden />
           </NavButton>
         </div>
       </div>
 
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-secondary" aria-label="Légende">
         <li className="flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-5 rounded bg-accent" /> Tâche
+          <span aria-hidden className="h-2.5 w-5 rounded-full bg-accent" /> Tâche
         </li>
         <li className="flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-5 rounded bg-text-secondary" /> Réunion
+          <span aria-hidden className="h-2.5 w-5 rounded-full bg-text-primary" /> Réunion
         </li>
         <li className="flex items-center gap-1.5">
           <span aria-hidden className="size-2 rounded-full bg-accent" /> Conflit
@@ -122,10 +126,10 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
 
       {/* Grille : md et plus */}
       <div className="hidden md:block">
-        <div className="overflow-hidden rounded-xl border border-border-soft">
-          <div className="grid grid-cols-7 border-b border-border-soft bg-border-soft/30 text-center text-xs font-semibold text-text-secondary">
+        <div className="overflow-hidden rounded-card border border-border-soft/80 bg-surface-raised shadow-soft">
+          <div className="grid grid-cols-7 border-b border-line bg-surface text-center font-mono text-eyebrow uppercase text-muted">
             {WEEKDAYS.map((w) => (
-              <div key={w} className="py-1.5">
+              <div key={w} className="py-2">
                 {w}
               </div>
             ))}
@@ -135,7 +139,7 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
             const lanes = blocks.reduce((n, b) => Math.max(n, b.lane + 1), 0);
             const minHeight = `${Math.max(5.5, HEADER_REM + lanes * LANE_REM + 0.5)}rem`;
             return (
-              <div key={monday} className="relative border-b border-border-soft last:border-b-0">
+              <div key={monday} className="relative border-b border-line last:border-b-0">
                 <div className="grid grid-cols-7">
                   {Array.from({ length: 7 }, (_, i) => monday + i).map((day) => {
                     const inMonth = day >= first && day <= last;
@@ -149,20 +153,22 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
                         aria-pressed={isSelected}
                         aria-label={`${longDay(day)}${isToday ? " (aujourd'hui)" : ""}`}
                         style={{ minHeight }}
-                        className={`border-l border-border-soft p-1 text-left align-top first:border-l-0 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-accent ${
-                          day < view.today ? "bg-border-soft/40" : "bg-background"
-                        } ${inMonth ? "" : "opacity-50"} ${isSelected ? "outline-2 -outline-offset-2 outline-text-primary" : "hover:bg-border-soft/20"}`}
+                        className={`flex flex-col items-start justify-start border-l border-line p-1 text-left transition-colors duration-(--duration-fast) first:border-l-0 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-accent ${
+                          day < view.today ? "bg-surface" : "bg-surface-raised"
+                        } ${inMonth ? "" : "opacity-50"} ${isSelected ? "outline-2 -outline-offset-2 outline-accent" : "hover:bg-accent-soft"}`}
                       >
-                        <span
-                          className={`inline-flex size-6 items-center justify-center rounded-full text-xs font-semibold ${
-                            isToday ? "bg-accent text-background" : "text-text-secondary"
-                          }`}
-                        >
-                          {dayOfMonth(day)}
+                        <span className="flex items-center">
+                          <span
+                            className={`inline-flex size-6 items-center justify-center rounded-full text-xs font-semibold ${
+                              isToday ? "bg-accent text-background shadow-accent" : "text-text-secondary"
+                            }`}
+                          >
+                            {dayOfMonth(day)}
+                          </span>
+                          {conflictDays.has(day) ? (
+                            <span aria-hidden className="ml-1 inline-block size-2 rounded-full bg-accent" />
+                          ) : null}
                         </span>
-                        {conflictDays.has(day) ? (
-                          <span aria-hidden className="ml-1 inline-block size-2 rounded-full bg-accent align-middle" />
-                        ) : null}
                       </button>
                     );
                   })}
@@ -186,12 +192,13 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
                         aria-label={label}
                         title={label}
                         style={{ gridColumn: `${b.col + 1} / span ${b.span}`, gridRow: b.lane + 2 }}
-                        className={`pointer-events-auto min-w-0 truncate px-1.5 text-xs leading-5 font-medium text-background hover:brightness-90 focus-visible:outline-2 focus-visible:outline-text-primary ${
-                          meeting ? "bg-text-secondary" : "bg-accent"
-                        } ${b.continuesBefore ? "rounded-l-none" : "rounded-l"} ${b.continuesAfter ? "rounded-r-none" : "rounded-r"}`}
+                        className={`pointer-events-auto flex min-w-0 items-center gap-1 truncate px-2 text-xs leading-5 font-semibold text-background transition-[filter] duration-(--duration-fast) hover:brightness-90 focus-visible:outline-2 focus-visible:outline-text-primary ${
+                          meeting ? "bg-text-primary" : "bg-accent"
+                        } ${b.continuesBefore ? "rounded-l-none" : "rounded-l-full"} ${b.continuesAfter ? "rounded-r-none" : "rounded-r-full"}`}
                       >
-                        {meeting ? "● " : b.continuesBefore ? "… " : ""}
-                        {title}
+                        {meeting ? <Users aria-hidden className="size-3 shrink-0" /> : null}
+                        {b.continuesBefore && !meeting ? <ChevronLeft aria-hidden className="size-3 shrink-0" /> : null}
+                        <span className="truncate">{title}</span>
                       </Link>
                     );
                   })}
@@ -204,19 +211,26 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
         {selected !== null && selectedContent ? (
           <DayPanel day={selected} content={selectedContent} showGroup={showGroup} onClose={() => setSelected(null)} />
         ) : (
-          <p className="mt-3 text-sm text-text-secondary">Cliquez sur un jour pour voir tout ce qui y est planifié.</p>
+          <p className="mt-3 flex items-center gap-2 text-sm text-text-secondary">
+            <MousePointerClick aria-hidden className="size-4 shrink-0 text-muted" />
+            Cliquez sur un jour pour voir tout ce qui y est planifié.
+          </p>
         )}
       </div>
 
       {/* Liste par jour : sous md */}
       <div className="md:hidden">
         {busyDays.length === 0 ? (
-          <p className="text-sm text-text-secondary">Rien de planifié en {monthLabel(ym)}.</p>
+          <EmptyState icon={CalendarX2} compact>
+            Rien de planifié en {monthLabel(ym)}.
+          </EmptyState>
         ) : (
-          <ol className="space-y-4">
+          <ol className="space-y-3">
             {busyDays.map((day) => (
-              <li key={day}>
-                <h4 className={`text-sm font-bold capitalize ${day === view.today ? "text-accent" : "text-text-primary"}`}>
+              <li key={day} className="rounded-card border border-line bg-surface p-3.5">
+                <h4
+                  className={`font-display text-sm font-bold capitalize ${day === view.today ? "text-accent-strong" : "text-text-primary"}`}
+                >
                   {longDay(day)}
                   {day === view.today ? " · aujourd'hui" : ""}
                 </h4>
@@ -229,7 +243,7 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
 
       {undated.length > 0 ? (
         <section className="space-y-2" aria-label="Conflits sans date">
-          <h3 className="text-sm font-bold text-text-primary">Conflits sans date</h3>
+          <h3 className="font-display text-sm font-bold text-text-primary">Conflits sans date</h3>
           <ConflictItems conflicts={undated} showGroup={showGroup} />
         </section>
       ) : null}
@@ -249,15 +263,15 @@ function NavButton({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       onClick={onClick}
       aria-label={label}
       disabled={disabled}
-      className="rounded-lg border border-border-soft bg-background px-3 py-1.5 text-sm font-semibold text-text-primary hover:bg-border-soft/30 disabled:opacity-50"
+      className="min-h-9 px-3 py-1.5 text-sm"
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -273,22 +287,28 @@ function DayPanel({
   onClose: () => void;
 }) {
   return (
-    <section aria-label={`Planning du ${longDay(day)}`} className="mt-3 space-y-3 rounded-xl border border-border-soft bg-white/60 p-4">
-      <div className="flex items-baseline justify-between gap-2">
-        <h4 className="text-base font-bold capitalize text-text-primary">{longDay(day)}</h4>
-        <button type="button" onClick={onClose} className="text-sm font-semibold text-text-secondary hover:underline">
+    <Card tone="muted" role="region" aria-label={`Planning du ${longDay(day)}`} className="mt-3 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <h4 className="font-display text-lg font-bold capitalize text-text-primary">{longDay(day)}</h4>
+        <Button variant="ghost" onClick={onClose} className="min-h-9 px-3 py-1.5 text-sm">
+          <X aria-hidden />
           Fermer
-        </button>
+        </Button>
       </div>
       <DayItems content={content} showGroup={showGroup} day={day} />
-    </section>
+    </Card>
   );
 }
 
 function DayItems({ content, showGroup, day }: { content: DayContent; showGroup: boolean; day: number }) {
   const { tasks, meetings, conflicts } = content;
   if (tasks.length + meetings.length + conflicts.length === 0) {
-    return <p className="text-sm text-text-secondary">Rien de planifié ce jour-là.</p>;
+    return (
+      <p className="flex items-center gap-2 text-sm text-text-secondary">
+        <CalendarX2 aria-hidden className="size-4 shrink-0 text-muted" />
+        Rien de planifié ce jour-là.
+      </p>
+    );
   }
   return (
     <div className="mt-1 space-y-2">
@@ -296,8 +316,11 @@ function DayItems({ content, showGroup, day }: { content: DayContent; showGroup:
         {meetings.map((m) => (
           <li key={`m:${m.taskId}`} className="text-sm">
             <p className="flex flex-wrap items-center gap-2">
-              <Badge tone="dark">Réunion</Badge>
-              <Link href={taskHref(m.groupId, m.taskId)} className="min-w-0 break-words font-medium text-text-primary hover:underline">
+              <Badge tone="dark">
+                <Users aria-hidden />
+                Réunion
+              </Badge>
+              <Link href={taskHref(m.groupId, m.taskId)} className="min-w-0 break-words font-semibold text-text-primary hover:text-accent-strong">
                 {m.taskTitle}
               </Link>
               {showGroup ? <span className="text-xs text-text-secondary">{m.groupName}</span> : null}
@@ -308,7 +331,7 @@ function DayItems({ content, showGroup, day }: { content: DayContent; showGroup:
         {tasks.map((t) => (
           <li key={`t:${t.id}`} className="text-sm">
             <p className="flex flex-wrap items-center gap-2">
-              <Link href={taskHref(t.groupId, t.id)} className="min-w-0 break-words font-medium text-text-primary hover:underline">
+              <Link href={taskHref(t.groupId, t.id)} className="min-w-0 break-words font-semibold text-text-primary hover:text-accent-strong">
                 {t.title}
               </Link>
               <Badge>{STATUS_LABEL[t.status]}</Badge>
@@ -331,10 +354,13 @@ function ConflictItems({ conflicts, showGroup }: { conflicts: CalendarConflict[]
   return (
     <ul className="space-y-2">
       {conflicts.map((c) => (
-        <li key={c.key} className="rounded-xl border border-accent/40 bg-accent/5 p-3 text-sm">
+        <li key={c.key} className="rounded-card border border-accent/30 bg-accent-soft p-3 text-sm">
           <p className="flex flex-wrap items-center gap-2">
-            <Badge tone="accent">{c.title}</Badge>
-            <Link href={taskHref(c.groupId, c.taskId)} className="min-w-0 break-words font-medium text-text-primary hover:underline">
+            <Badge tone="accent">
+              <TriangleAlert aria-hidden />
+              {c.title}
+            </Badge>
+            <Link href={taskHref(c.groupId, c.taskId)} className="min-w-0 break-words font-semibold text-text-primary hover:text-accent-strong">
               {c.taskTitle}
             </Link>
             {showGroup ? <span className="text-xs text-text-secondary">{c.groupName}</span> : null}

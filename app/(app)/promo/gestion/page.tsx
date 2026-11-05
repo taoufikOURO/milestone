@@ -1,10 +1,14 @@
+import { ArrowRightLeft, KeyRound, Settings, Trash2, UsersRound } from "lucide-react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { StaggerList } from "@/components/motion/Stagger";
 import { DeletePromoForm, TransferDelegationForm } from "@/components/promo/forms";
 import { PromoSkeleton } from "@/components/promo/PromoSkeleton";
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/ui/Card";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { PersonRow } from "@/components/ui/PersonRow";
 import { requireVerifiedUser } from "@/lib/auth/guards";
 import { formatPromoCode } from "@/lib/promo-code";
 import { findMyPromoId, getPromoOverview } from "@/lib/services/promo";
@@ -31,39 +35,43 @@ async function GestionContent() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">Gestion de « {promo.name} »</h1>
+      <PageHeader title={<>Gestion de « {promo.name} »</>} icon={Settings} />
 
       <Card>
-        <h2 className="text-sm font-semibold text-text-secondary">Code de la promo</h2>
-        <p className="mt-1 font-mono text-2xl font-bold tracking-widest text-text-primary">
+        <h2 className="flex items-center gap-2 font-mono text-eyebrow uppercase text-muted">
+          <KeyRound aria-hidden className="size-3.5 text-accent" />
+          Code de la promo
+        </h2>
+        <p className="mt-2 font-mono text-3xl font-bold tracking-widest text-text-primary">
           {formatPromoCode(promo.code)}
         </p>
         <p className="mt-1 text-xs text-text-secondary">À partager à la classe pour qu&apos;elle rejoigne la promo.</p>
       </Card>
 
       <Card>
-        <h2 className="text-lg font-bold text-text-primary">
+        <CardTitle icon={UsersRound}>
           Membres <span className="text-text-secondary">({promo.members.length})</span>
-        </h2>
-        <ul className="mt-3 divide-y divide-border-soft">
+        </CardTitle>
+        <StaggerList className="mt-3 divide-y divide-line">
           {promo.members.map((m) => (
-            <li key={m.id} className="flex items-center justify-between gap-2 py-2">
-              <span className="min-w-0 truncate text-text-primary">
-                {m.firstName} {m.lastName} <span className="text-sm text-text-secondary">@{m.username}</span>
-              </span>
-              {m.role === "delegate" ? <Badge tone="accent">Délégué</Badge> : null}
-            </li>
+            <PersonRow
+              key={m.id}
+              firstName={m.firstName}
+              lastName={m.lastName}
+              username={m.username}
+              badge={m.role === "delegate" ? <Badge tone="accent">Délégué</Badge> : null}
+            />
           ))}
-        </ul>
+        </StaggerList>
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-bold text-text-primary">Passation de la délégation</h2>
+        <CardTitle icon={ArrowRightLeft}>Passation de la délégation</CardTitle>
         <TransferDelegationForm promoId={promo.id} candidates={others} />
       </Card>
 
       <Card tone="muted" className="space-y-3">
-        <h2 className="text-lg font-bold text-text-primary">Supprimer la promo</h2>
+        <CardTitle icon={Trash2}>Supprimer la promo</CardTitle>
         <p className="text-sm text-text-secondary">
           Tous les membres quittent la promo et tous ses groupes sont supprimés, avec leurs données.
         </p>

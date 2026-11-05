@@ -1,13 +1,19 @@
+import { ArrowRight, CalendarRange, FolderKanban, KeyRound, LogOut, Settings, UsersRound } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Alert } from "@/components/auth/ui";
-import { LeavePromoForm } from "@/components/promo/forms";
 import { PromoTimeline } from "@/components/calendar/PromoTimeline";
+import { StaggerItem, StaggerList } from "@/components/motion/Stagger";
+import { LeavePromoForm } from "@/components/promo/forms";
 import { PromoSkeleton } from "@/components/promo/PromoSkeleton";
+import { Alert } from "@/components/ui/Alert";
 import { Badge } from "@/components/ui/Badge";
 import { ButtonLink } from "@/components/ui/ButtonLink";
-import { Card } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { PersonRow } from "@/components/ui/PersonRow";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { requireVerifiedUser } from "@/lib/auth/guards";
 import { formatPromoCode } from "@/lib/promo-code";
 import { getPromoCalendar } from "@/lib/services/calendar";
@@ -37,15 +43,21 @@ async function PromoContent({ searchParams }: Pick<PageProps<"/promo">, "searchP
   if (!promo) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">Promo</h1>
-        <Card className="space-y-4">
-          <p className="text-text-secondary">Vous n&apos;êtes dans aucune promo.</p>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <ButtonLink href="/promo/rejoindre">Rejoindre une promo</ButtonLink>
-            <ButtonLink href="/promo/creer" variant="ghost">
-              Créer une promo
-            </ButtonLink>
-          </div>
+        <PageHeader title="Promo" icon={UsersRound} />
+        <Card>
+          <EmptyState
+            icon={UsersRound}
+            actions={
+              <>
+                <ButtonLink href="/promo/rejoindre">Rejoindre une promo</ButtonLink>
+                <ButtonLink href="/promo/creer" variant="ghost">
+                  Créer une promo
+                </ButtonLink>
+              </>
+            }
+          >
+            Vous n&apos;êtes dans aucune promo.
+          </EmptyState>
         </Card>
       </div>
     );
@@ -56,70 +68,89 @@ async function PromoContent({ searchParams }: Pick<PageProps<"/promo">, "searchP
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-text-primary sm:text-3xl">{promo.name}</h1>
-        {isDelegate ? (
-          <ButtonLink href="/promo/gestion" variant="ghost">
-            Gestion de la promo
-          </ButtonLink>
-        ) : null}
-      </div>
+      <PageHeader
+        title={promo.name}
+        icon={UsersRound}
+        actions={
+          isDelegate ? (
+            <ButtonLink href="/promo/gestion" variant="ghost">
+              <Settings aria-hidden />
+              Gestion de la promo
+            </ButtonLink>
+          ) : null
+        }
+      />
 
       {params.creee === "1" && isDelegate ? (
-        <Alert tone="info">Promo créée. Partagez le code ci-dessous à votre classe.</Alert>
+        <Alert tone="success">Promo créée. Partagez le code ci-dessous à votre classe.</Alert>
       ) : null}
 
       {promo.code ? (
-        <Card>
-          <h2 className="text-sm font-semibold text-text-secondary">Code de la promo</h2>
-          <p className="mt-1 font-mono text-2xl font-bold tracking-widest text-text-primary">
-            {formatPromoCode(promo.code)}
-          </p>
-          <p className="mt-1 text-xs text-text-secondary">Visible par vous seul, en tant que délégué.</p>
+        <Card className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="flex items-center gap-2 font-mono text-eyebrow uppercase text-muted">
+              <KeyRound aria-hidden className="size-3.5 text-accent" />
+              Code de la promo
+            </h2>
+            <p className="mt-2 font-mono text-3xl font-bold tracking-widest text-text-primary">
+              {formatPromoCode(promo.code)}
+            </p>
+            <p className="mt-1 text-xs text-text-secondary">Visible par vous seul, en tant que délégué.</p>
+          </div>
         </Card>
       ) : null}
 
       <Card className="min-w-0">
-        <h2 className="text-lg font-bold text-text-primary">Calendrier de la promo</h2>
-        <Suspense fallback={<div className="mt-3 h-24 animate-pulse rounded-lg bg-border-soft/60" aria-busy="true" />}>
+        <CardTitle icon={CalendarRange}>Calendrier de la promo</CardTitle>
+        <Suspense fallback={<Skeleton className="mt-4 h-24" />}>
           <TimelineContent userId={user.id} emailVerifiedAt={user.emailVerifiedAt} promoId={promo.id} />
         </Suspense>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <h2 className="text-lg font-bold text-text-primary">
+          <CardTitle icon={UsersRound}>
             Membres <span className="text-text-secondary">({promo.members.length})</span>
-          </h2>
-          <ul className="mt-3 divide-y divide-border-soft">
+          </CardTitle>
+          <StaggerList className="mt-3 divide-y divide-line">
             {promo.members.map((m) => (
-              <li key={m.id} className="flex items-center justify-between gap-2 py-2">
-                <span className="min-w-0 truncate text-text-primary">
-                  {m.firstName} {m.lastName} <span className="text-sm text-text-secondary">@{m.username}</span>
-                </span>
-                {m.role === "delegate" ? <Badge tone="accent">Délégué</Badge> : null}
-              </li>
+              <PersonRow
+                key={m.id}
+                firstName={m.firstName}
+                lastName={m.lastName}
+                username={m.username}
+                badge={m.role === "delegate" ? <Badge tone="accent">Délégué</Badge> : null}
+              />
             ))}
-          </ul>
+          </StaggerList>
         </Card>
 
         <Card>
-          <h2 className="text-lg font-bold text-text-primary">
+          <CardTitle icon={FolderKanban}>
             Groupes <span className="text-text-secondary">({promo.groups.length})</span>
-          </h2>
+          </CardTitle>
           {promo.groups.length === 0 ? (
-            <p className="mt-3 text-sm text-text-secondary">Aucun groupe pour l&apos;instant.</p>
+            <EmptyState icon={FolderKanban} compact>
+              Aucun groupe pour l&apos;instant.
+            </EmptyState>
           ) : (
-            <ul className="mt-3 divide-y divide-border-soft">
+            <StaggerList className="mt-3 divide-y divide-line">
               {promo.groups.map((g) => (
-                <li key={g.id} className="flex items-center justify-between gap-2 py-2">
+                <StaggerItem key={g.id} className="flex items-center justify-between gap-3 py-2.5">
                   <div className="min-w-0">
                     {g.isMember ? (
-                      <Link href={`/groupes/${g.id}`} className="block truncate font-medium text-text-primary hover:text-accent">
-                        {g.name}
+                      <Link
+                        href={`/groupes/${g.id}`}
+                        className="group flex items-center gap-1.5 truncate font-semibold text-text-primary hover:text-accent-strong focus-visible:outline-2 focus-visible:outline-accent"
+                      >
+                        <span className="truncate">{g.name}</span>
+                        <ArrowRight
+                          aria-hidden
+                          className="size-3.5 shrink-0 text-muted transition-transform duration-(--duration-fast) group-hover:translate-x-0.5 group-hover:text-accent"
+                        />
                       </Link>
                     ) : (
-                      <p className="truncate font-medium text-text-primary">{g.name}</p>
+                      <p className="truncate font-semibold text-text-primary">{g.name}</p>
                     )}
                     <p className="text-xs text-text-secondary">
                       {dateFormat.format(g.startDate)} → {dateFormat.format(g.endDate)} · {g.memberCount} membre
@@ -127,15 +158,15 @@ async function PromoContent({ searchParams }: Pick<PageProps<"/promo">, "searchP
                     </p>
                   </div>
                   {g.isMember ? <Badge>Mon groupe</Badge> : null}
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </StaggerList>
           )}
         </Card>
       </div>
 
       <Card tone="muted" className="space-y-3">
-        <h2 className="text-lg font-bold text-text-primary">Quitter la promo</h2>
+        <CardTitle icon={LogOut}>Quitter la promo</CardTitle>
         <LeavePromoForm
           isDelegate={isDelegate}
           delegateCandidates={promo.members.filter((m) => m.id !== user.id)}

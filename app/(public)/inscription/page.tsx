@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { SignUpForm } from "@/components/auth/forms";
 import { AuthShell } from "@/components/auth/ui";
+import { TextLink } from "@/components/ui/TextLink";
 
 export const metadata: Metadata = { title: "Inscription · Milestone" };
 
@@ -13,9 +13,7 @@ export default function InscriptionPage() {
       footer={
         <>
           Déjà inscrit ?{" "}
-          <Link href="/connexion" className="font-medium text-text-primary underline">
-            Se connecter
-          </Link>
+          <TextLink href="/connexion">Se connecter</TextLink>
         </>
       }
     >

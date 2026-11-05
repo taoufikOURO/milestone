@@ -1,10 +1,12 @@
+import { ArrowRight, ChartNoAxesColumn, ClipboardList } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { Badge } from "@/components/ui/Badge";
-import { Card } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { CardSkeleton } from "@/components/ui/Skeleton";
 import { requireVerifiedUser } from "@/lib/auth/guards";
 import { formatDate } from "@/lib/format";
 import { getGroupForMember } from "@/lib/services/group";
@@ -13,7 +15,7 @@ export const metadata: Metadata = { title: "Groupe · Milestone" };
 
 export default function GroupPage({ params }: PageProps<"/groupes/[id]">) {
   return (
-    <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-border-soft/60" />}>
+    <Suspense fallback={<CardSkeleton />}>
       {params.then(({ id }) => (
         <GroupOverview groupId={id} />
       ))}
@@ -31,8 +33,8 @@ async function GroupOverview({ groupId }: { groupId: string }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card className="space-y-2">
-        <h2 className="text-lg font-bold text-text-primary">Projet</h2>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+        <CardTitle icon={ClipboardList}>Projet</CardTitle>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 pt-2 text-sm">
           <dt className="text-text-secondary">Début</dt>
           <dd className="text-text-primary">{formatDate(group.startDate)}</dd>
           <dt className="text-text-secondary">Deadline</dt>
@@ -45,9 +47,11 @@ async function GroupOverview({ groupId }: { groupId: string }) {
       </Card>
 
       <Card className="space-y-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-lg font-bold text-text-primary">Avancement</h2>
-          <span className="text-2xl font-bold text-text-primary">{group.progressPercent} %</span>
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <CardTitle icon={ChartNoAxesColumn}>Avancement</CardTitle>
+          <span className="font-display text-4xl font-extrabold tracking-tight text-text-primary">
+            {group.progressPercent} %
+          </span>
         </div>
         <ProgressBar value={group.progressPercent} label="Avancement du groupe" />
         <p className="text-sm text-text-secondary">
@@ -60,8 +64,15 @@ async function GroupOverview({ groupId }: { groupId: string }) {
               {plural(group.unassignedTaskCount)}
             </Badge>
           ) : null}
-          <Link href={`/groupes/${group.id}/taches`} className="text-sm font-semibold text-accent hover:underline">
-            Voir les tâches →
+          <Link
+            href={`/groupes/${group.id}/taches`}
+            className="group inline-flex items-center gap-1.5 text-sm font-semibold text-accent-strong hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            Voir les tâches
+            <ArrowRight
+              aria-hidden
+              className="size-4 transition-transform duration-(--duration-fast) group-hover:translate-x-0.5"
+            />
           </Link>
         </div>
       </Card>

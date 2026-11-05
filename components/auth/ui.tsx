@@ -1,5 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { Appear } from "@/components/motion/Appear";
+import { LogoMark } from "@/components/landing/Logo";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 
 export function AuthShell({
   title,
@@ -13,22 +18,32 @@ export function AuthShell({
   footer?: ReactNode;
 }) {
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <Link href="/" className="mb-6 block text-center text-xl font-bold text-accent">
+    <main className="relative isolate flex flex-1 items-center justify-center overflow-hidden px-4 py-12">
+      {/* Feuille de planning en fond, estompée sur les bords. */}
+      <div
+        aria-hidden
+        className="bg-grid absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_40%,black_20%,transparent_75%)]"
+      />
+      <Appear className="w-full max-w-md">
+        <Link
+          href="/"
+          className="mx-auto mb-6 flex w-fit items-center gap-2.5 rounded-control font-display text-lg font-bold tracking-tight text-text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+        >
+          <LogoMark />
           Milestone
         </Link>
-        <div className="rounded-2xl border border-border-soft bg-white/60 p-6 shadow-sm sm:p-8">
-          <h1 className="text-2xl font-bold text-text-primary">{title}</h1>
-          {subtitle ? <p className="mt-2 text-sm text-text-secondary">{subtitle}</p> : null}
+        <Card tone="panel">
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-text-primary">{title}</h1>
+          {subtitle ? <p className="mt-2 text-sm leading-relaxed text-text-secondary">{subtitle}</p> : null}
           <div className="mt-6">{children}</div>
-        </div>
-        {footer ? <div className="mt-4 text-center text-sm text-text-secondary">{footer}</div> : null}
-      </div>
+        </Card>
+        {footer ? <div className="mt-5 text-center text-sm text-text-secondary">{footer}</div> : null}
+      </Appear>
     </main>
   );
 }
 
+/** Champ de formulaire d'authentification : Input du système de design, obligatoire par défaut. */
 export function Field({
   label,
   name,
@@ -48,61 +63,24 @@ export function Field({
   hint?: string;
   required?: boolean;
 }) {
-  const describedBy = error ? `${name}-error` : hint ? `${name}-hint` : undefined;
   return (
-    <div>
-      <label htmlFor={name} className="block text-sm font-medium text-text-primary">
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        autoComplete={autoComplete}
-        defaultValue={defaultValue}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        className={`mt-1 block w-full rounded-lg border bg-background px-3 py-2 text-text-primary outline-none focus:ring-2 focus:ring-accent/40 ${
-          error ? "border-accent" : "border-border-soft"
-        }`}
-      />
-      {error ? (
-        <p id={`${name}-error`} className="mt-1 text-sm text-accent">
-          {error}
-        </p>
-      ) : hint ? (
-        <p id={`${name}-hint`} className="mt-1 text-xs text-text-secondary">
-          {hint}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-export function Alert({ tone, children }: { tone: "error" | "info"; children: ReactNode }) {
-  return (
-    <p
-      role={tone === "error" ? "alert" : "status"}
-      className={`rounded-lg border px-3 py-2 text-sm ${
-        tone === "error"
-          ? "border-accent/40 bg-accent/10 text-text-primary"
-          : "border-border-soft bg-border-soft/30 text-text-secondary"
-      }`}
-    >
-      {children}
-    </p>
+    <Input
+      label={label}
+      name={name}
+      type={type}
+      autoComplete={autoComplete}
+      defaultValue={defaultValue}
+      required={required}
+      error={error}
+      hint={hint}
+    />
   );
 }
 
 export function SubmitButton({ pending, children }: { pending: boolean; children: ReactNode }) {
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="w-full rounded-lg bg-accent px-4 py-2.5 font-semibold text-background transition hover:brightness-95 disabled:opacity-60"
-    >
+    <Button type="submit" fullWidth disabled={pending}>
       {pending ? "Patientez…" : children}
-    </button>
+    </Button>
   );
 }

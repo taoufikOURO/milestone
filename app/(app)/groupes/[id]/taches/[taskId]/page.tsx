@@ -1,3 +1,4 @@
+import { ArrowLeft, ListChecks, Pencil, Trash2, TriangleAlert, UserCheck, Waypoints } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,7 +11,9 @@ import {
   UpdateTaskForm,
 } from "@/components/task/forms";
 import { TaskStatusBadge, UnassignedBadge } from "@/components/task/status";
-import { Card } from "@/components/ui/Card";
+import { Alert } from "@/components/ui/Alert";
+import { Card, CardTitle } from "@/components/ui/Card";
+import { CardSkeleton } from "@/components/ui/Skeleton";
 import { requireVerifiedUser } from "@/lib/auth/guards";
 import { getTaskForMember } from "@/lib/services/task";
 
@@ -18,7 +21,7 @@ export const metadata: Metadata = { title: "Tâche · Milestone" };
 
 export default function TaskPage({ params }: PageProps<"/groupes/[id]/taches/[taskId]">) {
   return (
-    <Suspense fallback={<div className="h-40 animate-pulse rounded-2xl bg-border-soft/60" />}>
+    <Suspense fallback={<CardSkeleton />}>
       {params.then(({ id, taskId }) => (
         <TaskContent groupId={id} taskId={taskId} />
       ))}
@@ -38,17 +41,26 @@ async function TaskContent({ groupId, taskId }: { groupId: string; taskId: strin
 
   return (
     <div className="space-y-6">
-      <Link href={`/groupes/${view.groupId}/taches`} className="text-sm text-text-secondary hover:text-accent">
-        ← Toutes les tâches
+      <Link
+        href={`/groupes/${view.groupId}/taches`}
+        className="group inline-flex items-center gap-1.5 text-sm font-semibold text-text-secondary hover:text-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        <ArrowLeft
+          aria-hidden
+          className="size-4 transition-transform duration-(--duration-fast) group-hover:-translate-x-0.5"
+        />
+        Toutes les tâches
       </Link>
 
       <Card className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="min-w-0 break-words text-xl font-bold text-text-primary">{task.title}</h2>
+          <h2 className="min-w-0 break-words font-display text-2xl font-extrabold tracking-tight text-text-primary">
+            {task.title}
+          </h2>
           <TaskStatusBadge status={task.status} />
           {task.isUnassigned ? <UnassignedBadge /> : null}
         </div>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
           <dt className="text-text-secondary">Durée</dt>
           <dd className="text-text-primary">
             {task.durationDays} jour{plural(task.durationDays)}
@@ -69,25 +81,27 @@ async function TaskContent({ groupId, taskId }: { groupId: string; taskId: strin
           </dd>
         </dl>
         {task.isUnassigned && isLeader ? (
-          <p className="text-sm text-accent">Cette tâche n&apos;a aucun assigné : attribuez-la à un membre.</p>
+          <Alert tone="error" icon={TriangleAlert}>
+            Cette tâche n&apos;a aucun assigné : attribuez-la à un membre.
+          </Alert>
         ) : null}
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="text-lg font-bold text-text-primary">Statut</h2>
+        <CardTitle icon={ListChecks}>Statut</CardTitle>
         <TaskStatusForm taskId={task.id} status={task.status} />
       </Card>
 
       {isLeader ? (
         <>
           <Card className="space-y-3">
-            <h2 className="text-lg font-bold text-text-primary">Modifier</h2>
+            <CardTitle icon={Pencil}>Modifier</CardTitle>
             <UpdateTaskForm task={task} />
           </Card>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Card className="space-y-3">
-              <h2 className="text-lg font-bold text-text-primary">Assignés</h2>
+              <CardTitle icon={UserCheck}>Assignés</CardTitle>
               <TaskAssigneesForm
                 taskId={task.id}
                 members={view.members}
@@ -95,7 +109,7 @@ async function TaskContent({ groupId, taskId }: { groupId: string; taskId: strin
               />
             </Card>
             <Card className="space-y-3">
-              <h2 className="text-lg font-bold text-text-primary">Dépendances</h2>
+              <CardTitle icon={Waypoints}>Dépendances</CardTitle>
               <TaskDependenciesForm
                 taskId={task.id}
                 candidates={view.otherTasks}
@@ -105,7 +119,7 @@ async function TaskContent({ groupId, taskId }: { groupId: string; taskId: strin
           </div>
 
           <Card tone="muted" className="space-y-3">
-            <h2 className="text-lg font-bold text-text-primary">Supprimer la tâche</h2>
+            <CardTitle icon={Trash2}>Supprimer la tâche</CardTitle>
             <DeleteTaskForm taskId={task.id} title={task.title} dependentCount={task.dependents.length} />
           </Card>
         </>

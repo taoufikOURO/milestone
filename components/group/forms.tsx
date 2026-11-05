@@ -1,8 +1,9 @@
 "use client";
 
+import { UserRound } from "lucide-react";
 import { useActionState } from "react";
-import { Alert } from "@/components/auth/ui";
 import { ConfirmedForm, Select } from "@/components/promo/forms";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import {
@@ -30,7 +31,7 @@ const toDateInput = (d: Date) => d.toISOString().slice(0, 10);
 
 function Feedback({ state }: { state: State }) {
   if (state.error) return <Alert tone="error">{state.error}</Alert>;
-  if (state.success) return <Alert tone="info">{state.success}</Alert>;
+  if (state.success) return <Alert tone="success">{state.success}</Alert>;
   return null;
 }
 
@@ -240,7 +241,11 @@ export function LeaveGroupForm({
 export function TransferLeadershipForm({ groupId, candidates }: { groupId: string; candidates: Person[] }) {
   const [state, action, pending] = useActionState(transferLeadershipAction, initial);
   if (candidates.length === 0) {
-    return <p className="text-sm text-text-secondary">Aucun autre membre pour l&apos;instant.</p>;
+    return (
+      <Alert tone="info" icon={UserRound}>
+        Aucun autre membre pour l&apos;instant.
+      </Alert>
+    );
   }
   return (
     <ConfirmedForm
