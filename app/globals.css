@@ -1,19 +1,153 @@
 @import "tailwindcss";
 
-/* Palette Milestone (CLAUDE.md). Pas de dark mode. */
+/*
+ * Système de design Milestone. Thème clair uniquement (pas de dark mode).
+ * Palette de marque strictement limitée aux cinq couleurs de CLAUDE.md ;
+ * les teintes intermédiaires en sont dérivées par mélange (color-mix).
+ */
 @theme {
+  /* Couleurs de marque */
   --color-background: #fffcf2;
   --color-border-soft: #ccc5b9;
   --color-text-secondary: #403d39;
   --color-text-primary: #252422;
   --color-accent: #eb5e28;
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* Teintes dérivées */
+  --color-surface: color-mix(in srgb, #ccc5b9 18%, #fffcf2); /* carte secondaire */
+  --color-surface-raised: color-mix(in srgb, #ffffff 45%, #fffcf2); /* carte surélevée */
+  --color-line: color-mix(in srgb, #ccc5b9 55%, #fffcf2); /* filets discrets */
+  --color-muted: color-mix(in srgb, #403d39 72%, #fffcf2); /* texte tertiaire */
+  --color-accent-soft: color-mix(in srgb, #eb5e28 12%, #fffcf2);
+  --color-accent-strong: color-mix(in srgb, #eb5e28 86%, #252422);
+  --color-ink-soft: color-mix(in srgb, #252422 88%, #fffcf2);
+
+  /* Typographie */
+  --font-display: var(--font-display-face), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
+
+  --text-display: clamp(2.6rem, 1.2rem + 6vw, 5.75rem);
+  --text-display--line-height: 0.95;
+  --text-display--letter-spacing: -0.035em;
+  --text-headline: clamp(2rem, 1.3rem + 2.8vw, 3.5rem);
+  --text-headline--line-height: 1;
+  --text-headline--letter-spacing: -0.03em;
+  --text-title: 1.375rem;
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.015em;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--line-height: 1;
+  --text-eyebrow--letter-spacing: 0.08em;
+
+  /* Rayons */
+  --radius-control: 0.75rem;
+  --radius-card: 1.25rem;
+  --radius-panel: 1.75rem;
+
+  /* Ombres (teintées par le texte principal, jamais par du noir pur) */
+  --shadow-hairline: 0 1px 0 color-mix(in srgb, #252422 6%, transparent);
+  --shadow-soft:
+    0 1px 2px color-mix(in srgb, #252422 6%, transparent),
+    0 4px 12px -4px color-mix(in srgb, #252422 10%, transparent);
+  --shadow-raised:
+    0 2px 4px color-mix(in srgb, #252422 5%, transparent),
+    0 18px 36px -18px color-mix(in srgb, #252422 28%, transparent);
+  --shadow-float:
+    0 4px 8px color-mix(in srgb, #252422 4%, transparent),
+    0 36px 64px -28px color-mix(in srgb, #252422 38%, transparent);
+  --shadow-accent: 0 10px 24px -10px color-mix(in srgb, #eb5e28 65%, transparent);
+
+  /* Espacements de mise en page */
+  --spacing-gutter: 1rem;
+  --spacing-section: clamp(5rem, 3rem + 7vw, 9rem);
+  --container-page: 72rem;
+  --container-prose: 38rem;
+
+  /* Courbes d'animation */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-soft: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* Durées (pas d'espace de noms Tailwind dédié) : utiliser duration-(--duration-base). */
+:root {
+  --duration-fast: 140ms;
+  --duration-base: 240ms;
+  --duration-slow: 520ms;
+  color-scheme: light;
 }
 
 body {
   background: var(--color-background);
   color: var(--color-text-primary);
   font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+}
+
+::selection {
+  background: color-mix(in srgb, #eb5e28 28%, transparent);
+  color: var(--color-text-primary);
+}
+
+/* Fond quadrillé façon feuille de planning, dérivé des bordures. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, #ccc5b9 38%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, #ccc5b9 38%, transparent) 1px, transparent 1px);
+  background-size: 2.5rem 2.5rem;
+}
+
+@utility bg-grid-ink {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, #fffcf2 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, #fffcf2 7%, transparent) 1px, transparent 1px);
+  background-size: 2.5rem 2.5rem;
+}
+
+/* Apparition du dialogue de confirmation. */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+dialog[open].animate-dialog {
+  animation: dialog-in var(--duration-base) var(--ease-out-soft);
+}
+
+dialog[open].animate-dialog::backdrop {
+  animation: backdrop-in var(--duration-base) var(--ease-out-soft);
+}
+
+/* Préférence système « réduire les animations » : plus aucune animation CSS. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
 }

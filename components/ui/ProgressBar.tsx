@@ -8,9 +8,12 @@ export function ProgressBar({ value, label }: { value: number; label: string }) 
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={percent}
-      className="h-2.5 w-full overflow-hidden rounded-full bg-border-soft"
+      className="h-2.5 w-full overflow-hidden rounded-full bg-border-soft/70 shadow-[inset_0_1px_1px_color-mix(in_srgb,#252422_8%,transparent)]"
     >
-      <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${percent}%` }} />
+      <div
+        className="h-full rounded-full bg-accent bg-linear-to-r from-accent to-accent-strong transition-[width] duration-(--duration-slow) ease-out-soft"
+        style={{ width: `${percent}%` }}
+      />
     </div>
   );
 }

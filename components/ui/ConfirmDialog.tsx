@@ -1,5 +1,6 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 
@@ -46,13 +47,23 @@ export function ConfirmDialog({
         e.preventDefault();
         if (!pending) onCancel();
       }}
-      className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-border-soft bg-background p-6 text-text-primary shadow-lg backdrop:bg-text-primary/50"
+      className="animate-dialog m-auto w-[calc(100%-2rem)] max-w-md rounded-panel border border-border-soft bg-background p-6 text-text-primary shadow-float backdrop:bg-text-primary/45 backdrop:backdrop-blur-[2px] sm:p-7"
     >
-      <h2 id={titleId} className="text-lg font-bold">
-        {title}
-      </h2>
-      <div className="mt-2 text-sm text-text-secondary">{description}</div>
-      <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <div className="flex items-start gap-4">
+        <span
+          aria-hidden
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent"
+        >
+          <TriangleAlert className="size-5" />
+        </span>
+        <div className="min-w-0 pt-0.5">
+          <h2 id={titleId} className="text-title font-bold">
+            {title}
+          </h2>
+          <div className="mt-2 text-sm leading-relaxed text-text-secondary">{description}</div>
+        </div>
+      </div>
+      <div className="mt-7 flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:justify-end">
         <Button variant="ghost" onClick={onCancel} disabled={pending}>
           {cancelLabel}
         </Button>
