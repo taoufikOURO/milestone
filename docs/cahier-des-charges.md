@@ -144,11 +144,14 @@ Un solveur (OR-Tools) n'est pas prévu en v1.
 
 - Visible uniquement par les membres du groupe.
 - Affiche les tâches planifiées, leur assigné, les réunions et les deadlines.
+- La deadline est un repère (drapeau et nom court du groupe) sur le jour de fin du groupe ; plusieurs deadlines le même jour s'empilent.
+- Une tâche qui dépasse la deadline de son groupe est coupée : la partie jusqu'à la deadline garde la couleur habituelle, la partie qui déborde est en rouge d'alerte (§6.1) ; entièrement rouge si elle commence après la deadline.
 - Chaque groupe a **son propre calendrier**.
 
 ### 5.3 Vue personnelle
 
 - Chaque étudiant voit l'ensemble de ses groupes et de ses tâches, sur un seul calendrier, pour éviter les conflits. C'est la vue sur laquelle l'algorithme de planification s'appuie.
+- Chaque repère de deadline indique le groupe concerné ; les dépassements sont affichés comme au §5.2.
 
 ---
 
@@ -165,6 +168,8 @@ Un solveur (OR-Tools) n'est pas prévu en v1.
 | `#403d39` | Texte secondaire, icônes |
 | `#252422` | Texte principal, titres, boutons secondaires |
 | `#eb5e28` | Boutons principaux, barres d'avancement, accents |
+
+**Exception : couleur d'alerte** (`--color-alert`, `#c1121f`, et sa teinte douce `--color-alert-soft`). La palette ci-dessus n'a pas de rouge, or les dépassements de deadline doivent être immédiatement visibles dans les calendriers. Ce rouge est réservé aux **retards** : partie d'une tâche qui dépasse la deadline de son groupe, et badge « j de retard ». Les repères de deadline restent dans la palette (texte `#252422` sur `#ccc5b9` à 20 %). Il ne sert à aucun autre usage (pas de bouton, de bordure ni d'erreur de formulaire).
 
 **Typographie** : sans-serif moderne, titres en gras et grands, texte courant en taille standard.
 

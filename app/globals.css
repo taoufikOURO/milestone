@@ -22,6 +22,11 @@
   --color-accent-strong: color-mix(in srgb, #eb5e28 86%, #252422);
   --color-ink-soft: color-mix(in srgb, #252422 88%, #fffcf2);
 
+  /* Alerte : réservée aux retards des calendriers (CDC §6.1).
+     Hors palette de marque, volontairement ; ne pas l'utiliser ailleurs. */
+  --color-alert: #c1121f; /* contraste ~6:1 sur #fffcf2 */
+  --color-alert-soft: color-mix(in srgb, #c1121f 10%, #fffcf2);
+
   /* Typographie */
   --font-display: var(--font-display-face), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;

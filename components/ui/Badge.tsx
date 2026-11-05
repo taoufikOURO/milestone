@@ -3,6 +3,7 @@ import type { HTMLAttributes } from "react";
 const TONES = {
   neutral: "border-line bg-surface text-text-secondary",
   accent: "border-accent/25 bg-accent-soft text-accent-strong",
+  alert: "border-alert/25 bg-alert-soft text-alert", // retards uniquement (CDC §6.1)
   dark: "border-text-primary bg-text-primary text-background",
 } as const;
 

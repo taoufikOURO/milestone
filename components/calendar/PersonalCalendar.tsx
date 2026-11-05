@@ -33,7 +33,7 @@ export function PersonalCalendar({ view }: { view: CalendarView }) {
   return (
     <div className="space-y-6">
       <Card className="space-y-4">
-        <CardTitle icon={CalendarDays}>Mes tâches</CardTitle>
+        <CardTitle icon={CalendarDays}>Mon calendrier</CardTitle>
         <MonthCalendar view={view} showGroup />
       </Card>
 

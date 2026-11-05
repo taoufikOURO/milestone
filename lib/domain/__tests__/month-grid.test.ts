@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   clipToWeek,
   daysInMonth,
+  deadlinesByDay,
   firstDayOfMonth,
   layoutWeek,
   monthOfDay,
   monthWeeks,
   shiftMonth,
+  splitAtDeadline,
   weekdayIndex,
 } from "@/lib/domain/month-grid";
 
@@ -147,7 +149,101 @@ describe("layoutWeek", () => {
       { id: "à cheval", start: monday + 5, end: monday + 12 },
     ]);
     expect(blocks).toEqual([
-      { id: "à cheval", col: 5, span: 2, lane: 0, continuesBefore: false, continuesAfter: true },
+      { id: "à cheval", col: 5, span: 2, lane: 0, continuesBefore: false, continuesAfter: true, normalSpan: 2 },
     ]);
+  });
+});
+
+describe("splitAtDeadline", () => {
+  const deadline = day(2026, 11, 20);
+
+  it("garde la tâche entière en couleur normale si elle finit avant la deadline", () => {
+    expect(splitAtDeadline({ start: deadline - 3, end: deadline }, deadline)).toEqual({
+      normal: { start: deadline - 3, end: deadline },
+      overdue: null,
+    });
+  });
+
+  it("coupe une tâche qui dépasse : normale jusqu'à la deadline incluse, rouge ensuite", () => {
+    expect(splitAtDeadline({ start: deadline - 2, end: deadline + 3 }, deadline)).toEqual({
+      normal: { start: deadline - 2, end: deadline },
+      overdue: { start: deadline + 1, end: deadline + 3 },
+    });
+  });
+
+  it("rend entièrement rouge une tâche qui commence après la deadline", () => {
+    expect(splitAtDeadline({ start: deadline + 1, end: deadline + 4 }, deadline)).toEqual({
+      normal: null,
+      overdue: { start: deadline + 1, end: deadline + 4 },
+    });
+  });
+
+  it("ignore un intervalle invalide", () => {
+    expect(splitAtDeadline({ start: deadline + 2, end: deadline }, deadline)).toEqual({ normal: null, overdue: null });
+  });
+});
+
+describe("layoutWeek et deadline", () => {
+  const monday = day(2026, 11, 16); // le 20 novembre est le vendredi (col 4)
+  const deadline = day(2026, 11, 20);
+
+  it("ne change rien sans deadline : tout le bloc est normal", () => {
+    expect(layoutWeek(monday, [{ id: "a", start: monday, end: monday + 2 }])[0]).toMatchObject({ span: 3, normalSpan: 3 });
+  });
+
+  it("marque la partie qui déborde dans la même semaine", () => {
+    const [b] = layoutWeek(monday, [{ id: "a", start: monday + 3, end: monday + 5, deadline }]);
+    expect(b).toMatchObject({ col: 3, span: 3, normalSpan: 2 }); // jeu., ven. normaux ; sam. rouge
+  });
+
+  it("rend tout le bloc rouge s'il commence après la deadline", () => {
+    const [b] = layoutWeek(monday, [{ id: "a", start: monday + 5, end: monday + 6, deadline }]);
+    expect(b).toMatchObject({ span: 2, normalSpan: 0 });
+  });
+
+  it("traverse une semaine et la deadline à la fois", () => {
+    const task = { id: "a", start: monday + 2, end: monday + 9, deadline }; // mer. → mer. suivant
+    expect(layoutWeek(monday, [task])[0]).toMatchObject({
+      col: 2, span: 5, normalSpan: 3, continuesBefore: false, continuesAfter: true,
+    }); // mer., jeu., ven. normaux ; sam., dim. rouges
+    expect(layoutWeek(monday + 7, [task])[0]).toMatchObject({
+      col: 0, span: 3, normalSpan: 0, continuesBefore: true, continuesAfter: false,
+    }); // toute la semaine suivante est rouge
+  });
+
+  it("traverse la deadline sur la semaine d'après quand la deadline tombe un dimanche", () => {
+    const sunday = monday + 6;
+    const task = { id: "a", start: monday + 5, end: sunday + 2, deadline: sunday };
+    expect(layoutWeek(monday, [task])[0]).toMatchObject({ span: 2, normalSpan: 2 });
+    expect(layoutWeek(monday + 7, [task])[0]).toMatchObject({ span: 2, normalSpan: 0 });
+  });
+});
+
+describe("deadlinesByDay", () => {
+  const d = day(2026, 11, 20);
+
+  it("place le repère de chaque groupe au jour de sa fin", () => {
+    const map = deadlinesByDay([
+      { id: "g1", name: "G1", endDay: d },
+      { id: "g2", name: "G2", endDay: d + 5 },
+    ]);
+    expect(map.get(d)).toEqual([{ groupId: "g1", groupName: "G1" }]);
+    expect(map.get(d + 5)).toEqual([{ groupId: "g2", groupName: "G2" }]);
+    expect(map.has(d + 1)).toBe(false);
+  });
+
+  it("empile deux deadlines le même jour dans un ordre stable (nom, puis identifiant)", () => {
+    const groups = [
+      { id: "b", name: "Zèbre", endDay: d },
+      { id: "c", name: "Alpha", endDay: d },
+      { id: "a", name: "Alpha", endDay: d },
+    ];
+    const expected = [
+      { groupId: "a", groupName: "Alpha" },
+      { groupId: "c", groupName: "Alpha" },
+      { groupId: "b", groupName: "Zèbre" },
+    ];
+    expect(deadlinesByDay(groups).get(d)).toEqual(expected);
+    expect(deadlinesByDay([...groups].reverse()).get(d)).toEqual(expected);
   });
 });

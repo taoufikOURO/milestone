@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarX2, ChevronLeft, ChevronRight, MousePointerClick, TriangleAlert, Users, X } from "lucide-react";
+import { CalendarX2, ChevronLeft, ChevronRight, Flag, MousePointerClick, TriangleAlert, Users, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { personName } from "@/components/calendar/parts";
@@ -10,12 +10,14 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
   daysInMonth,
+  deadlinesByDay,
   firstDayOfMonth,
   layoutWeek,
   monthOfDay,
   monthWeeks,
   shiftMonth,
   type BlockInput,
+  type DeadlineMarker,
   type YearMonth,
 } from "@/lib/domain/month-grid";
 import { dateOfDay } from "@/lib/domain/timeline";
@@ -30,6 +32,7 @@ const STATUS_LABEL = { todo: "À faire", in_progress: "En cours", done: "Termin�
 const WEEKDAYS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
 const LANE_REM = 1.5;
 const HEADER_REM = 1.75;
+const MARKER_REM = 1.25;
 
 const monthFormat = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" });
 const longDayFormat = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
@@ -39,7 +42,12 @@ const dayOfMonth = (day: number) => dateOfDay(day).getUTCDate();
 const taskHref = (groupId: string, taskId: string) => `/groupes/${groupId}/taches/${taskId}`;
 const assignees = (t: CalendarTask) => (t.assignees.length > 0 ? t.assignees.map(personName).join(", ") : "Personne");
 
-type DayContent = { tasks: CalendarTask[]; meetings: CalendarMeeting[]; conflicts: CalendarConflict[] };
+type DayContent = {
+  tasks: CalendarTask[];
+  meetings: CalendarMeeting[];
+  conflicts: CalendarConflict[];
+  deadlines: DeadlineMarker[];
+};
 
 export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGroup: boolean }) {
   const [ym, setYm] = useState<YearMonth>(() => monthOfDay(view.today));
@@ -64,7 +72,10 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
     return { byTask, dated, undated };
   }, [view]);
 
+  const deadlines = useMemo(() => deadlinesByDay(view.groups), [view.groups]);
+
   const contentOf = (day: number): DayContent => ({
+    deadlines: deadlines.get(day) ?? [],
     tasks: view.tasks.filter((t) => t.start <= day && day <= t.end),
     meetings: view.meetings.filter((m) => m.day === day),
     conflicts: dated.filter((d) => d.day === day).map((d) => d.conflict),
@@ -72,7 +83,7 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
 
   const items = useMemo<BlockInput[]>(
     () => [
-      ...view.tasks.map((t) => ({ id: `t:${t.id}`, start: t.start, end: t.end })),
+      ...view.tasks.map((t) => ({ id: `t:${t.id}`, start: t.start, end: t.end, deadline: t.deadline })),
       ...view.meetings.map((m) => ({ id: `m:${m.taskId}`, start: m.day, end: m.day })),
     ],
     [view],
@@ -89,7 +100,7 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
   const monthDays = Array.from({ length: last - first + 1 }, (_, i) => first + i);
   const busyDays = monthDays.filter((d) => {
     const c = contentOf(d);
-    return c.tasks.length + c.meetings.length + c.conflicts.length > 0;
+    return c.tasks.length + c.meetings.length + c.conflicts.length + c.deadlines.length > 0;
   });
   const selectedContent = selected !== null ? contentOf(selected) : null;
 
@@ -122,6 +133,12 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
         <li className="flex items-center gap-1.5">
           <span aria-hidden className="size-2 rounded-full bg-accent" /> Conflit
         </li>
+        <li className="flex items-center gap-1.5">
+          <Flag aria-hidden className="size-3.5 text-text-primary" /> Deadline
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span aria-hidden className="h-2.5 w-5 rounded-full bg-alert" /> Dépassement
+        </li>
       </ul>
 
       {/* Grille : md et plus */}
@@ -137,7 +154,8 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
           {weeks.map((monday) => {
             const blocks = layoutWeek(monday, items);
             const lanes = blocks.reduce((n, b) => Math.max(n, b.lane + 1), 0);
-            const minHeight = `${Math.max(5.5, HEADER_REM + lanes * LANE_REM + 0.5)}rem`;
+            const markers = Math.max(0, ...Array.from({ length: 7 }, (_, i) => deadlines.get(monday + i)?.length ?? 0));
+            const minHeight = `${Math.max(5.5, HEADER_REM + lanes * LANE_REM + markers * MARKER_REM + 0.5)}rem`;
             return (
               <div key={monday} className="relative border-b border-line last:border-b-0">
                 <div className="grid grid-cols-7">
@@ -145,22 +163,23 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
                     const inMonth = day >= first && day <= last;
                     const isToday = day === view.today;
                     const isSelected = day === selected;
+                    const dayDeadlines = deadlines.get(day) ?? [];
                     return (
                       <button
                         key={day}
                         type="button"
                         onClick={() => setSelected(isSelected ? null : day)}
                         aria-pressed={isSelected}
-                        aria-label={`${longDay(day)}${isToday ? " (aujourd'hui)" : ""}`}
+                        aria-label={`${longDay(day)}${isToday ? " (aujourd'hui)" : ""}${dayDeadlines.map((d) => `, deadline ${d.groupName}`).join("")}`}
                         style={{ minHeight }}
-                        className={`flex flex-col items-start justify-start border-l border-line p-1 text-left transition-colors duration-(--duration-fast) first:border-l-0 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-accent ${
+                        className={`flex flex-col items-stretch justify-start border-l border-line p-1 text-left transition-colors duration-(--duration-fast) first:border-l-0 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-accent ${
                           day < view.today ? "bg-surface" : "bg-surface-raised"
                         } ${inMonth ? "" : "opacity-50"} ${isSelected ? "outline-2 -outline-offset-2 outline-accent" : "hover:bg-accent-soft"}`}
                       >
                         <span className="flex items-center">
                           <span
                             className={`inline-flex size-6 items-center justify-center rounded-full text-xs font-semibold ${
-                              isToday ? "bg-accent text-background shadow-accent" : "text-text-secondary"
+                              isToday ? "text-text-primary ring-1 ring-text-primary" : "text-text-secondary"
                             }`}
                           >
                             {dayOfMonth(day)}
@@ -169,6 +188,20 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
                             <span aria-hidden className="ml-1 inline-block size-2 rounded-full bg-accent" />
                           ) : null}
                         </span>
+                        {dayDeadlines.length > 0 ? (
+                          <span className="mt-auto flex min-w-0 flex-col gap-0.5 pt-1">
+                            {dayDeadlines.map((d) => (
+                              <span
+                                key={d.groupId}
+                                title={`Deadline de ${d.groupName}`}
+                                className="flex min-w-0 items-center gap-1 rounded-sm bg-border-soft/20 px-1 text-[0.6875rem] leading-4 font-semibold text-text-primary"
+                              >
+                                <Flag aria-hidden className="size-3 shrink-0" />
+                                <span className="truncate">{d.groupName}</span>
+                              </span>
+                            ))}
+                          </span>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -191,9 +224,17 @@ export function MonthCalendar({ view, showGroup }: { view: CalendarView; showGro
                         href={href}
                         aria-label={label}
                         title={label}
-                        style={{ gridColumn: `${b.col + 1} / span ${b.span}`, gridRow: b.lane + 2 }}
+                        style={{
+                          gridColumn: `${b.col + 1} / span ${b.span}`,
+                          gridRow: b.lane + 2,
+                          ...(!meeting && b.normalSpan > 0 && b.normalSpan < b.span
+                            ? {
+                                backgroundImage: `linear-gradient(to right, var(--color-accent) ${(b.normalSpan / b.span) * 100}%, var(--color-alert) ${(b.normalSpan / b.span) * 100}%)`,
+                              }
+                            : {}),
+                        }}
                         className={`pointer-events-auto flex min-w-0 items-center gap-1 truncate px-2 text-xs leading-5 font-semibold text-background transition-[filter] duration-(--duration-fast) hover:brightness-90 focus-visible:outline-2 focus-visible:outline-text-primary ${
-                          meeting ? "bg-text-primary" : "bg-accent"
+                          meeting ? "bg-text-primary" : b.normalSpan === 0 ? "bg-alert" : "bg-accent"
                         } ${b.continuesBefore ? "rounded-l-none" : "rounded-l-full"} ${b.continuesAfter ? "rounded-r-none" : "rounded-r-full"}`}
                       >
                         {meeting ? <Users aria-hidden className="size-3 shrink-0" /> : null}
@@ -301,8 +342,8 @@ function DayPanel({
 }
 
 function DayItems({ content, showGroup, day }: { content: DayContent; showGroup: boolean; day: number }) {
-  const { tasks, meetings, conflicts } = content;
-  if (tasks.length + meetings.length + conflicts.length === 0) {
+  const { tasks, meetings, conflicts, deadlines } = content;
+  if (tasks.length + meetings.length + conflicts.length + deadlines.length === 0) {
     return (
       <p className="flex items-center gap-2 text-sm text-text-secondary">
         <CalendarX2 aria-hidden className="size-4 shrink-0 text-muted" />
@@ -313,6 +354,17 @@ function DayItems({ content, showGroup, day }: { content: DayContent; showGroup:
   return (
     <div className="mt-1 space-y-2">
       <ul className="space-y-1.5">
+        {deadlines.map((d) => (
+          <li key={`d:${d.groupId}`} className="text-sm">
+            <p className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border-soft bg-border-soft/20 px-2.5 py-0.5 text-xs leading-5 font-semibold text-text-primary">
+                <Flag aria-hidden className="size-3.5" />
+                Deadline
+              </span>
+              <span className="min-w-0 break-words font-semibold text-text-primary">{d.groupName}</span>
+            </p>
+          </li>
+        ))}
         {meetings.map((m) => (
           <li key={`m:${m.taskId}`} className="text-sm">
             <p className="flex flex-wrap items-center gap-2">
@@ -335,12 +387,12 @@ function DayItems({ content, showGroup, day }: { content: DayContent; showGroup:
                 {t.title}
               </Link>
               <Badge>{STATUS_LABEL[t.status]}</Badge>
-              {t.daysLate > 0 ? <Badge tone="accent">{t.daysLate} j de retard</Badge> : null}
+              {t.daysLate > 0 ? <Badge tone="alert">{t.daysLate} j de retard</Badge> : null}
+              {day > t.deadline ? <Badge tone="alert">Après la deadline</Badge> : null}
             </p>
             <p className="break-words text-text-secondary">
               {formatDay(t.start)} → {formatDay(t.end)}
               {showGroup ? ` · ${t.groupName}` : ""} · {assignees(t)}
-              {t.deadline === day ? " · deadline" : ""}
             </p>
           </li>
         ))}
