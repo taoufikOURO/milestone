@@ -30,11 +30,29 @@ const endAfterStart = {
 export const createGroupSchema = z.object(groupDatesShape).refine(endAfterStart.check, endAfterStart.params);
 export type CreateGroupInput = z.infer<typeof createGroupSchema>;
 
-export const marginPercentSchema = z.coerce
-  .number({ error: "La marge doit être un nombre entier." })
-  .int("La marge doit être un nombre entier.")
-  .min(0, "La marge doit être comprise entre 0 et 100 %.")
-  .max(100, "La marge doit être comprise entre 0 et 100 %.");
+/**
+ * Marge de sécurité du groupe (§4.6, décision 19) : la seule marge de
+ * l'application, il n'y en a pas par tâche. 0 % = pas de marge.
+ */
+export const MIN_MARGIN_PERCENT = 0;
+export const MAX_MARGIN_PERCENT = 100;
+
+const MARGIN_RANGE_MESSAGE = `La marge doit être comprise entre ${MIN_MARGIN_PERCENT} et ${MAX_MARGIN_PERCENT} %.`;
+
+// Chaîne de chiffres uniquement : z.coerce.number accepterait "" ou " " (→ 0),
+// "1e1" (→ 10) ou "0x10" (→ 16), et un champ vidé supprimerait la marge.
+export const marginPercentSchema = z
+  .string()
+  .trim()
+  .regex(/^-?\d+$/, "La marge doit être un nombre entier.")
+  .transform(Number)
+  .pipe(
+    z
+      .number()
+      .int("La marge doit être un nombre entier.")
+      .min(MIN_MARGIN_PERCENT, MARGIN_RANGE_MESSAGE)
+      .max(MAX_MARGIN_PERCENT, MARGIN_RANGE_MESSAGE),
+  );
 
 export const updateGroupSchema = z
   .object({ groupId: z.uuid(), ...groupDatesShape, marginPercent: marginPercentSchema })

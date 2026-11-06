@@ -1,6 +1,6 @@
 # Cahier des charges : Milestone
 
-Version 1.0, 4 novembre 2026
+Version 1.1, 5 novembre 2026
 
 ---
 
@@ -106,7 +106,7 @@ Règles de priorité lorsque deux projets se chevauchent :
 - **Deadlines proches** : la tâche dont la deadline est la plus proche passe en premier.
 - **Deadlines similaires** : la charge est répartie le plus équitablement possible entre les tâches et les étudiants.
 
-**Marge de sécurité** : une marge de 20 % par défaut est ajoutée à chaque durée saisie. Elle est réglable par le chef du groupe, entre 0 et 100 %. Durée effective = durée × (1 + marge), arrondie au jour supérieur.
+**Marge de sécurité** : la marge est définie **au niveau du groupe** (`groups.margin_percent`, 20 % par défaut) et s'applique à la durée saisie de chacune de ses tâches ; il n'existe pas de marge par tâche. Seul le chef du groupe la règle, par un nombre entier entre 0 et 100 %. 0 % signifie « pas de marge ». Durée effective = ⌈durée × (100 + marge) / 100⌉, arrondie au jour supérieur (décision 19).
 
 **Deadline d'une tâche** : la date de fin de son groupe. Deux deadlines sont « similaires » lorsqu'elles tombent à la même date ; le départage se fait alors sur la charge restante.
 
@@ -290,6 +290,10 @@ Style inspiré d'une vidéo de référence :
 ### Décision du 5 novembre 2026
 
 18. **Envoi d'emails : Gmail SMTP à la place de Brevo** (remplace la décision 7). L'envoi passe par SMTP (`smtp.gmail.com`, port 587 en STARTTLS, mot de passe d'application) avec nodemailer. Le transport est choisi par `ENVIRONMENT` : SMTP si la valeur est exactement `production`, console sinon ; les tests imposent toujours la console. `MAIL_FROM` utilise la même adresse que `SMTP_USER`. Le transport Brevo et les variables `BREVO_API_KEY` et `EMAIL_TRANSPORT` sont supprimés. Conséquence : limite Gmail de 500 destinataires par jour ; au-delà, l'utilisateur voit « Le quota d'envoi quotidien est atteint. Réessayez demain. ».
+
+### Décision du 6 novembre 2026
+
+19. **Marge au niveau du groupe uniquement** (précise la décision 1). La marge de sécurité est stockée dans `groups.margin_percent` (défaut 20) et le moteur de planification n'utilise que cette valeur. Il n'existe **aucune marge par tâche**, ni dans l'interface, ni dans la validation, ni dans le moteur. Le chef du groupe la règle dans les paramètres du groupe, par un nombre entier de 0 à 100 %, et aucun autre membre ne peut la modifier ; la validation et le contrôle du rôle sont faits côté serveur à chaque appel. **0 % = pas de marge** : la durée effective est alors égale à la durée saisie. Durée effective = ⌈durée × (100 + marge) / 100⌉. Pas de changement de schéma ni de migration.
 
 ---
 

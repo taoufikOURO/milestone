@@ -19,10 +19,30 @@ describe("effectiveDuration", () => {
     expect(effectiveDuration(25, 12)).toBe(28);
   });
 
-  it("refuse une durée ou une marge hors bornes", () => {
+  it.each([1, 2, 7, 1000])("marge 0 %% : %i j reste %i j (pas de marge)", (days) => {
+    expect(effectiveDuration(days, 0)).toBe(days);
+  });
+
+  it.each([
+    [1, 2], // 1,2 → 2
+    [4, 5], // 4,8 → 5
+    [5, 6], // exact
+    [7, 9], // 8,4 → 9
+    [10, 12], // exact
+  ])("marge 20 %% : %i j donne %i j (arrondi au jour supérieur)", (days, expected) => {
+    expect(effectiveDuration(days, 20)).toBe(expected);
+  });
+
+  it.each([1, 3, 500, 1000])("marge 100 %% : %i j est doublé", (days) => {
+    expect(effectiveDuration(days, 100)).toBe(days * 2);
+  });
+
+  it("refuse une durée hors bornes", () => {
     expect(() => effectiveDuration(0, 20)).toThrow(RangeError);
     expect(() => effectiveDuration(1.5, 20)).toThrow(RangeError);
-    expect(() => effectiveDuration(2, -1)).toThrow(RangeError);
-    expect(() => effectiveDuration(2, 101)).toThrow(RangeError);
+  });
+
+  it.each([-1, 101, 20.5, Number.NaN])("refuse la marge %d", (margin) => {
+    expect(() => effectiveDuration(2, margin)).toThrow(RangeError);
   });
 });

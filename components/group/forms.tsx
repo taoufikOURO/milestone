@@ -20,6 +20,7 @@ import {
   respondInvitationAction,
   type InvitationFormState,
 } from "@/lib/actions/invitation";
+import { MAX_MARGIN_PERCENT, MIN_MARGIN_PERCENT } from "@/lib/validation/group";
 
 type Person = { id: string; username: string; firstName: string; lastName: string };
 type State = GroupFormState | InvitationFormState;
@@ -101,16 +102,17 @@ export function UpdateGroupForm({
         defaults={{ name: group.name, startDate: toDateInput(group.startDate), endDate: toDateInput(group.endDate) }}
       />
       <Input
-        label="Marge de sécurité (%)"
+        label="Marge de sécurité du groupe (%)"
         name="marginPercent"
         type="number"
-        min={0}
-        max={100}
+        inputMode="numeric"
+        min={MIN_MARGIN_PERCENT}
+        max={MAX_MARGIN_PERCENT}
         step={1}
         required
         defaultValue={state.values?.marginPercent ?? String(group.marginPercent)}
         error={state.errors?.marginPercent}
-        hint="Ajoutée à chaque durée de tâche pour la planification, entre 0 et 100 %."
+        hint={`Nombre entier de ${MIN_MARGIN_PERCENT} à ${MAX_MARGIN_PERCENT}, appliqué à toutes les tâches du groupe pour la planification. 0 % = pas de marge : la durée planifiée est la durée saisie.`}
       />
       <Feedback state={state} />
       <Button type="submit" disabled={pending}>
