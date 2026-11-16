@@ -177,14 +177,17 @@ Un solveur (OR-Tools) n'est pas prévu en v1.
 
 ### 6.2 Landing page
 
-Style inspiré d'une vidéo de référence :
-- Fond clair, grand titre centré et en gras, sous-titre court en gris.
-- **Barre de navigation** arrondie et flottante en haut, avec le logo, les liens (Fonctionnalités, Comment ça marche) et deux boutons : « Se connecter » et « Créer une promo ».
-- **Section principale** : titre d'accroche, sous-titre, bouton d'appel à l'action orange (`#eb5e28`).
-- **Éléments flottants** : cartes d'aperçu de l'application (calendrier de promo, barre de groupe) légèrement inclinées, avec ombre douce.
-- **Section avis** : carte centrée avec un témoignage et des flèches de navigation.
-- **Footer** : présentation courte, liens, et le nom de l'application en très grand en bas de page, en couleur `#eb5e28` atténuée.
-- Pas de copie de la marque de la vidéo de référence.
+Style inspiré de références visuelles (structure, hiérarchie typographique, rythme des sections), sans en reprendre la marque, les textes ni les visuels. Fond clair, titres en capitales et en gras, sections numérotées (« / 01 » à « / 05 »), palette du §6.1 uniquement (le rouge d'alerte n'y figure pas). Dans l'ordre :
+- **Barre de navigation** arrondie et flottante en haut, avec le logo, les liens (Fonctionnalités, Comment ça marche) et deux boutons : « Se connecter » et « Créer une promo ». Sur mobile, un menu dépliant reprend ces liens et boutons.
+- **Section principale** : titre d'accroche, sous-titre court, bouton d'appel à l'action orange (`#eb5e28`) « Créer une promo » et lien secondaire « Comment ça marche ».
+- **Éléments flottants** : cartes d'aperçu de l'application (calendrier de promo, barre d'avancement d'un groupe) légèrement inclinées, avec ombre douce.
+- **Bande sombre** : les règles de planification présentées comme des faits (une tâche par jour et par étudiant, échéance la plus proche d'abord, durée de 1 à 1000 jours, marge de 0 à 100 %). Aucun chiffre inventé.
+- **Fonctionnalités** : trois cartes numérotées (calendrier de promo, planning par étudiant, conflits de deadline repérés).
+- **Comment ça marche** : trois étapes numérotées (rejoindre ou créer une promo, créer un groupe et inviter, ajouter les tâches et laisser planifier).
+- **Bloc final** : panneau orange en biais « Lancez votre première promo », qui mène à l'inscription.
+- **Footer** : présentation courte, liens, mention de copyright, et le nom de l'application en très grand en bas de page, en couleur `#eb5e28` atténuée.
+- **Pas de section avis** : aucun témoignage ni avis sur la landing.
+- Animations discrètes (entrées au défilement, titres révélés mot par mot, cartes qui flottent), entièrement désactivées si l'utilisateur préfère réduire les animations.
 
 ### 6.3 Pages
 

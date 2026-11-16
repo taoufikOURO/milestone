@@ -12,14 +12,23 @@ export function LogoMark({ className = "" }: { className?: string }) {
   );
 }
 
-export function Logo() {
+/** Logo cliquable ; `caption` ajoute une petite légende sous le nom. */
+export function Logo({ caption }: { caption?: string }) {
   return (
     <Link
       href="/"
-      className="flex items-center gap-2.5 rounded-control font-display text-lg font-bold tracking-tight text-text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+      aria-label="Milestone, accueil"
+      className="flex items-center gap-2.5 rounded-control text-text-primary focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
     >
       <LogoMark />
-      Milestone
+      <span className="flex flex-col">
+        <span className="font-display text-lg font-bold leading-none tracking-tight">Milestone</span>
+        {caption ? (
+          <span className="mt-1 font-mono text-[9px] uppercase leading-none tracking-[0.12em] text-text-secondary">
+            {caption}
+          </span>
+        ) : null}
+      </span>
     </Link>
   );
 }

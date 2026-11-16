@@ -21,6 +21,11 @@
   --color-accent-soft: color-mix(in srgb, #eb5e28 12%, #fffcf2);
   --color-accent-strong: color-mix(in srgb, #eb5e28 86%, #252422);
   --color-ink-soft: color-mix(in srgb, #252422 88%, #fffcf2);
+  /* Landing : gris des titres (#ccc5b9 pur n'atteint que 1,7:1 sur le fond).
+     ~3,4:1 sur #fffcf2 : réservé aux grands titres (≥ 24 px). */
+  --color-text-faint: color-mix(in srgb, #403d39 45%, #ccc5b9);
+  /* Orange lisible en petit texte sur fond clair (~4,8:1). */
+  --color-accent-ink: color-mix(in srgb, #eb5e28 75%, #252422);
 
   /* Alerte : réservée aux retards des calendriers (CDC §6.1).
      Hors palette de marque, volontairement ; ne pas l'utiliser ailleurs. */
@@ -38,6 +43,13 @@
   --text-headline: clamp(2rem, 1.3rem + 2.8vw, 3.5rem);
   --text-headline--line-height: 1;
   --text-headline--letter-spacing: -0.03em;
+  /* Landing : titres en capitales, style affiche. */
+  --text-poster: clamp(2.6rem, 1rem + 5.4vw, 5.25rem);
+  --text-poster--line-height: 0.92;
+  --text-poster--letter-spacing: -0.02em;
+  --text-section: clamp(2.1rem, 1.2rem + 2.6vw, 3.5rem);
+  --text-section--line-height: 0.95;
+  --text-section--letter-spacing: -0.015em;
   --text-title: 1.375rem;
   --text-title--line-height: 1.2;
   --text-title--letter-spacing: -0.015em;

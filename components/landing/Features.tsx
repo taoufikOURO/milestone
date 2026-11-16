@@ -1,162 +1,87 @@
-import { CalendarRange, Gauge, GitBranch, WandSparkles, type LucideIcon } from "lucide-react";
+import { ArrowRight, CalendarRange, Plus, TriangleAlert, UserRound, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
-import { Reveal } from "@/components/motion/Reveal";
-import { SectionHeading } from "./SectionHeading";
+import { RevealWords, Stagger, StaggerItem } from "./motion";
+import { ARROW, BTN_OUTLINE, POSTER, SectionLabel } from "./ui";
 
-/* Illustrations en CSS, purement décoratives (aria-hidden), sans données réelles. */
-
-function PlanningArt() {
-  const lanes = [
-    [{ s: 0, w: 3, t: "ink" }, { s: 3, w: 2, t: "accent" }, { s: 5, w: 1, t: "margin" }],
-    [{ s: 1, w: 2, t: "accent" }, { s: 3, w: 1, t: "margin" }, { s: 5, w: 3, t: "ink" }],
-    [{ s: 0, w: 2, t: "ink" }, { s: 2, w: 4, t: "accent" }, { s: 6, w: 1, t: "margin" }],
-  ];
-  const tone: Record<string, string> = {
-    ink: "bg-text-primary",
-    accent: "bg-accent",
-    margin:
-      "bg-[repeating-linear-gradient(135deg,color-mix(in_srgb,#eb5e28_55%,transparent)_0_3px,transparent_3px_6px)]",
-  };
-  return (
-    <div className="space-y-2.5">
-      {lanes.map((lane, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <span className="size-6 shrink-0 rounded-full border border-border-soft bg-surface" />
-          <div className="grid h-5 flex-1 grid-cols-8 gap-1">
-            {lane.map((b, j) => (
-              <span
-                key={j}
-                className={`rounded-md ${tone[b.t]}`}
-                style={{ gridColumn: `${b.s + 1} / span ${b.w}` }}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-      <div className="flex items-center gap-4 pt-2 font-mono text-[10px] uppercase tracking-wider text-muted">
-        <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-sm bg-accent" /> Tâche
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-sm bg-[repeating-linear-gradient(135deg,#eb5e28_0_2px,transparent_2px_4px)]" />{" "}
-          Marge
-        </span>
-      </div>
-    </div>
-  );
-}
+/* Illustrations rognées en bas de carte : décoratives, le texte porte le sens. */
 
 function PromoArt() {
   const bars = [
-    { offset: 0, width: 70, fill: 75 },
-    { offset: 15, width: 60, fill: 40 },
-    { offset: 30, width: 65, fill: 15 },
+    { left: 0, width: 72, fill: 70 },
+    { left: 18, width: 64, fill: 40 },
+    { left: 34, width: 66, fill: 15 },
   ];
   return (
     <div className="space-y-3">
       {bars.map((b, i) => (
-        <div key={i} className="relative h-4">
-          <span
-            className="absolute inset-y-0 overflow-hidden rounded-full bg-border-soft/60"
-            style={{ left: `${b.offset}%`, width: `${b.width}%` }}
-          >
-            <span className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${b.fill}%` }} />
-          </span>
-          <span
-            className="absolute top-1/2 size-2 -translate-y-1/2 rotate-45 bg-text-primary"
-            style={{ left: `calc(${b.offset + b.width}% + 6px)` }}
-          />
-        </div>
+        <span
+          key={i}
+          className="relative block h-4 overflow-hidden rounded-full bg-border-soft/60"
+          style={{ marginLeft: `${b.left}%`, width: `${b.width}%` }}
+        >
+          <span className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${b.fill}%` }} />
+        </span>
       ))}
     </div>
   );
 }
 
-function ProgressArt() {
-  // Avancement au prorata des jours : chaque segment a la largeur de sa durée.
-  const segments = [
-    { w: 3, done: true },
-    { w: 1, done: true },
-    { w: 2, done: false },
-    { w: 4, done: false },
-  ];
+function PlanningArt() {
+  const days = ["A", "A", "B", "A", "C", "B", "B"];
+  const tone: Record<string, string> = { A: "bg-accent", B: "bg-text-primary", C: "bg-border-soft" };
   return (
     <div>
-      <div className="flex h-3 gap-1">
-        {segments.map((s, i) => (
-          <span
-            key={i}
-            className={`rounded-full ${s.done ? "bg-accent" : "bg-border-soft/70"}`}
-            style={{ flexGrow: s.w }}
-          />
-        ))}
-      </div>
-      <div className="mt-2 flex gap-1 font-mono text-[10px] text-muted">
-        {segments.map((s, i) => (
-          <span key={i} style={{ flexGrow: s.w }}>
-            {s.w} j
+      <div className="grid grid-cols-7 gap-1.5 font-mono text-[9px] text-text-secondary">
+        {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
+          <span key={i} className="text-center">
+            {d}
           </span>
         ))}
       </div>
+      <div className="mt-1.5 grid grid-cols-7 gap-1.5">
+        {days.map((g, i) => (
+          <span key={i} className={`h-12 rounded-md ${tone[g]}`} />
+        ))}
+      </div>
     </div>
   );
 }
 
-function DependencyArt() {
-  const node =
-    "absolute flex h-8 items-center rounded-lg border px-3 font-mono text-[10px] uppercase tracking-wider";
+function ConflictArt() {
   return (
-    <div className="relative h-36">
-      <svg className="absolute inset-0 size-full text-border-soft" viewBox="0 0 400 144" preserveAspectRatio="none">
-        <path d="M70 72 C 120 72, 120 28, 170 28" fill="none" stroke="currentColor" strokeWidth="2" />
-        <path d="M70 72 C 120 72, 120 116, 170 116" fill="none" stroke="currentColor" strokeWidth="2" />
-        <path d="M230 28 C 280 28, 280 72, 320 72" fill="none" stroke="#eb5e28" strokeWidth="2" strokeDasharray="4 4" />
-        <path d="M230 116 C 280 116, 280 72, 320 72" fill="none" stroke="#eb5e28" strokeWidth="2" strokeDasharray="4 4" />
-      </svg>
-      <span className={`${node} left-0 top-1/2 -translate-y-1/2 border-text-primary bg-text-primary text-background`}>
-        Tâche A
+    <div className="relative h-20">
+      <span className="absolute inset-y-0 left-[62%] border-l-2 border-dashed border-text-primary/60" />
+      <span className="absolute -top-1 left-[62%] flex -translate-x-1/2 items-center rounded-full bg-text-primary px-2 py-0.5 font-mono text-[9px] uppercase text-background">
+        Deadline
       </span>
-      <span className={`${node} left-[42%] top-0 border-border-soft bg-surface-raised text-text-secondary`}>
-        Tâche B
-      </span>
-      <span className={`${node} bottom-0 left-[42%] border-border-soft bg-surface-raised text-text-secondary`}>
-        Tâche C
-      </span>
-      <span className={`${node} right-0 top-1/2 -translate-y-1/2 border-accent/40 bg-accent-soft text-accent-strong`}>
-        Tâche D
+      <span className="absolute left-[8%] top-9 h-4 w-[44%] rounded-full bg-border-soft" />
+      <span className="absolute left-[30%] top-14 h-4 w-[48%] rounded-full bg-text-primary" />
+      <span className="absolute left-[78%] top-[3.25rem] flex size-7 -translate-x-1/2 items-center justify-center rounded-full bg-accent text-text-primary">
+        <TriangleAlert className="size-3.5" />
       </span>
     </div>
   );
 }
 
-const FEATURES: { icon: LucideIcon; title: string; text: string; art: ReactNode; span: string }[] = [
-  {
-    icon: WandSparkles,
-    title: "Planification automatique",
-    text: "Milestone ordonne les tâches de chaque étudiant, tous groupes confondus : l’échéance la plus proche passe en premier, la charge est répartie, et une marge de sécurité réglable s’ajoute à chaque durée.",
-    art: <PlanningArt />,
-    span: "md:col-span-4",
-  },
+const FEATURES: { icon: LucideIcon; title: string; text: string; art: ReactNode }[] = [
   {
     icon: CalendarRange,
     title: "Calendrier de promo",
-    text: "Chaque groupe est une barre, de son début à sa fin, remplie selon son avancement.",
+    text: "Chaque groupe est une barre, de sa date de début à sa date de fin, remplie selon son avancement.",
     art: <PromoArt />,
-    span: "md:col-span-2",
   },
   {
-    icon: Gauge,
-    title: "Suivi d’avancement",
-    text: "L’avancement se calcule au prorata des jours des tâches terminées. Les conflits sont signalés au calendrier.",
-    art: <ProgressArt />,
-    span: "md:col-span-2",
+    icon: UserRound,
+    title: "Planning par étudiant",
+    text: "Les tâches de tous vos groupes sur un seul calendrier, une par jour, dans l’ordre des deadlines.",
+    art: <PlanningArt />,
   },
   {
-    icon: GitBranch,
-    title: "Gestion des dépendances",
-    text: "Une tâche n’est planifiée qu’une fois ses dépendances terminées. Les dépendances circulaires sont refusées.",
-    art: <DependencyArt />,
-    span: "md:col-span-4",
+    icon: TriangleAlert,
+    title: "Conflits de deadline repérés",
+    text: "Une deadline qui ne peut pas être tenue est signalée au dernier jour de la tâche concernée.",
+    art: <ConflictArt />,
   },
 ];
 
@@ -165,35 +90,58 @@ export function Features() {
     <section
       id="fonctionnalites"
       aria-labelledby="fonctionnalites-titre"
-      className="scroll-mt-24 border-y border-line bg-surface/60 px-gutter py-section"
+      className="scroll-mt-24 px-gutter py-section"
     >
-      <div className="mx-auto max-w-page">
-        <SectionHeading
-          id="fonctionnalites-titre"
-          eyebrow="Fonctionnalités"
-          title="Un planning qui tient compte de tout le monde."
-          intro="Un étudiant fait partie de plusieurs groupes. Milestone le sait, et planifie en conséquence."
-        />
-        <ul className="mt-14 grid gap-4 sm:mt-16 md:grid-cols-6 md:gap-5">
+      <div className="mx-auto grid max-w-page gap-12 lg:grid-cols-[0.85fr_2fr] lg:gap-10">
+        <div className="lg:pt-4">
+          <SectionLabel index="03">Fonctionnalités</SectionLabel>
+          <RevealWords
+            id="fonctionnalites-titre"
+            className={`${POSTER} mt-6 text-section text-text-primary`}
+            lines={[{ text: "Pensé pour" }, { text: "les deadlines" }, { text: "qui se croisent." }]}
+          />
+          <p className="mt-6 max-w-sm leading-relaxed text-text-secondary">
+            Plusieurs enseignants, plusieurs projets, des dates qui se chevauchent. Milestone met tout à plat,
+            pour chaque étudiant.
+          </p>
+          <Link href="/inscription" className={`${BTN_OUTLINE} mt-8`}>
+            Créer une promo
+            <ArrowRight aria-hidden className={ARROW} />
+          </Link>
+        </div>
+
+        <Stagger as="ul" className="grid gap-4 sm:grid-cols-3">
           {FEATURES.map((f, i) => (
-            <Reveal as="li" key={f.title} delay={(i % 2) * 0.1} className={f.span}>
-              <article className="group flex h-full flex-col rounded-panel border border-border-soft/80 bg-surface-raised p-6 shadow-soft transition-[transform,box-shadow,border-color] duration-(--duration-base) ease-out-soft hover:border-border-soft hover:shadow-raised motion-safe:hover:-translate-y-1 sm:p-7">
-                <div aria-hidden className="mb-8 rounded-card border border-line bg-background p-5">
-                  {f.art}
+            <StaggerItem as="li" key={f.title}>
+              <article className="group relative flex h-full min-h-[25rem] flex-col overflow-hidden rounded-panel border border-border-soft/80 bg-surface p-5 transition-[transform,box-shadow,border-color] duration-(--duration-base) ease-out-soft hover:border-border-soft hover:shadow-raised motion-safe:hover:-translate-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-xs text-text-secondary">{String(i + 1).padStart(2, "0")}</span>
+                  <Plus
+                    aria-hidden
+                    className="size-5 text-text-primary transition-transform duration-(--duration-base) ease-out-soft motion-safe:group-hover:rotate-90"
+                  />
                 </div>
-                <div className="mt-auto flex items-start gap-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-text-primary text-background transition-colors duration-(--duration-base) group-hover:bg-accent">
-                    <f.icon className="size-[18px]" aria-hidden />
-                  </span>
-                  <div>
-                    <h3 className="text-title font-bold text-text-primary">{f.title}</h3>
-                    <p className="mt-2 leading-relaxed text-text-secondary">{f.text}</p>
+                <span className="mt-6 flex size-10 items-center justify-center rounded-control bg-text-primary text-background transition-colors duration-(--duration-base) group-hover:bg-accent group-hover:text-text-primary">
+                  <f.icon aria-hidden className="size-[18px]" />
+                </span>
+                <h3 className="mt-4 text-xl font-bold leading-tight tracking-tight text-text-primary">{f.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-text-secondary">{f.text}</p>
+                <span
+                  aria-hidden
+                  className="mt-5 flex size-9 items-center justify-center rounded-full border border-text-primary/50 text-text-primary transition-colors duration-(--duration-base) group-hover:border-text-primary group-hover:bg-text-primary group-hover:text-background"
+                >
+                  <ArrowRight className={ARROW} />
+                </span>
+                {/* Visuel rogné qui déborde du bas de la carte. */}
+                <div aria-hidden className="-mx-5 -mb-5 mt-auto pt-6">
+                  <div className="translate-y-3 rounded-t-card border-x border-t border-border-soft/80 bg-background px-5 pb-6 pt-5 transition-transform duration-(--duration-base) ease-out-soft motion-safe:group-hover:translate-y-0">
+                    {f.art}
                   </div>
                 </div>
               </article>
-            </Reveal>
+            </StaggerItem>
           ))}
-        </ul>
+        </Stagger>
       </div>
     </section>
   );
